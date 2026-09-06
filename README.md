@@ -10,6 +10,8 @@
 
 このファイルには**本家との差分**だけを書いています。
 
+**[ビルド済みアプリをダウンロード](https://github.com/uchidakoichi/QLMarkdown/releases/latest)** — インストール方法は [インストール](#インストール) を参照してください。
+
 > このアプリケーションは Markdown エディタ／ビューアの代替を目指したものではありません。
 > また、本ソフトウェアは無保証で提供されます。
 
@@ -134,6 +136,7 @@ Group containers identifiers should be prefixed by requestor's team ID
 
 1. [Releases ページ](https://github.com/uchidakoichi/QLMarkdown/releases/latest) を開きます
 2. **Assets** から `QLMarkdown-X.Y.Z-fork.N.zip` をダウンロードします
+   - 現在の最新は [`QLMarkdown-1.5.2-fork.1.zip`](https://github.com/uchidakoichi/QLMarkdown/releases/download/v1.5.2-fork.1/QLMarkdown-1.5.2-fork.1.zip)（約 24 MB）です
 3. zip をダブルクリックして展開し、出てきた **QLMarkdown.app** を `/Applications`（アプリケーションフォルダ）にドラッグします
 
 ### A-2: 隔離属性を外す（ここが重要）
