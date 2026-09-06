@@ -117,36 +117,104 @@ Group containers identifiers should be prefixed by requestor's team ID
 
 削除したオプション: `--about`
 
-## ビルド
+## インストール
+
+このフォークにはビルド済みの配布物がありません。ソースからビルドして自分の Mac に入れる形になります。ターミナルを使ったことがなくても進められるよう、順番に説明します。
+
+**ターミナルの開き方**: `command + スペース` で Spotlight を開き、`ターミナル` と入力して Enter。以下のコマンドは 1 行ずつコピーして貼り付け、Enter を押してください。
+
+所要時間は初回で 30 分〜1 時間程度（うち大半は Xcode のインストールとビルドの待ち時間）です。
+
+### 手順 1: Xcode をインストールする
+
+App Store から [Xcode](https://apps.apple.com/jp/app/xcode/id497799835) をインストールします（十数 GB あるので時間がかかります）。
+
+インストールが終わったら **一度 Xcode を起動して**、利用規約への同意と追加コンポーネントのインストールを済ませてください。その後、ターミナルで次を実行します。
 
 ```sh
-git clone https://github.com/uchidakoichi/QLMarkdown.git
-cd QLMarkdown
-git submodule update --init
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 ```
 
-ビルドには以下が必要です。
+`sudo` を使うので Mac のログインパスワードを聞かれます（入力しても画面には何も表示されませんが、そのまま打って Enter で大丈夫です）。
+
+確認:
+
+```sh
+xcodebuild -version
+```
+
+`Xcode 26.6` のようにバージョンが表示されれば OK です。`xcode-select: error: tool 'xcodebuild' requires Xcode` と出る場合は上の `xcode-select` をやり直してください。
+
+### 手順 2: Homebrew と必要なツールをインストールする
+
+[Homebrew](https://brew.sh/index_ja) は macOS 用のパッケージ管理ツールです。未導入なら次を実行します（画面の指示に従ってください）。
+
+```sh
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+続いてビルドに必要なツールを入れます。
 
 ```sh
 brew install autoconf automake libtool cmake
 ```
 
-`cmake` は `cmark-gfm` の、`autoconf` / `automake` / `libtool` は `libpcre2` のビルドに使います。
+`cmake` は Markdown パーサ（cmark-gfm）の、`autoconf` / `automake` / `libtool` は正規表現ライブラリ（libpcre2）のビルドに使います。
+
+### 手順 3: フォント PlemolJP Console NF をインストールする
+
+このフォークは本文・コードの既定フォントに **PlemolJP Console NF** を使います。日本語対応のプログラミング用フォントで、8 種類のウェイトを持っているのでウェイト指定の機能をそのまま活かせます。
+
+1. [PlemolJP のリリースページ](https://github.com/yuru7/PlemolJP/releases/latest) を開きます
+2. **Assets** の中から **`PlemolJP_NF_vX.Y.Z.zip`**（`NF` = Nerd Fonts 版、アイコン用の文字が入っています）をダウンロードします
+   - 執筆時点の最新は [`PlemolJP_NF_v3.1.0.zip`](https://github.com/yuru7/PlemolJP/releases/download/v3.1.0/PlemolJP_NF_v3.1.0.zip) です
+   - `HS` は全角スペースを可視化しない版、無印は Nerd Fonts なしの版です。どれでも動きますが、以下は `NF` 版を前提に説明します
+3. ダウンロードした zip をダブルクリックして展開します
+4. 展開されたフォルダの中から、ファイル名が **`PlemolJPConsoleNF-`** で始まる `.ttf` ファイルをすべて選択します（`PlemolJPConsoleNF-Thin.ttf`、`PlemolJPConsoleNF-Regular.ttf` など 16 個）
+5. 選択したファイルをダブルクリックすると **Font Book**（フォント）アプリが開くので、「インストール」を押します
+   - まとめてインストールしたい場合は、選択したファイルを Finder で `~/Library/Fonts` フォルダにドラッグしても構いません
+
+インストールできたか確認:
+
+```sh
+ls ~/Library/Fonts | grep PlemolJPConsoleNF | head
+```
+
+ファイル名が並べば OK です。
+
+> [!NOTE]
+> フォントを入れなくてもアプリは動きます。その場合は CSS のフォールバック（本文は macOS のシステムフォント、コードは `ui-monospace` / Menlo）で表示されます。あとから設定画面でお好きなフォントに変更することもできます。
+>
+> ファイル名の `PlemolJP35ConsoleNF-` は「半角 3 : 全角 5」の幅比率の別ファミリです。好みで使い分けてください（その場合は設定画面でフォントを選び直します）。
+
+### 手順 4: ソースコードを取得する
+
+```sh
+cd ~/Developer 2>/dev/null || { mkdir -p ~/Developer && cd ~/Developer; }
+git clone https://github.com/uchidakoichi/QLMarkdown.git
+cd QLMarkdown
+git submodule update --init
+```
+
+`git submodule update --init` は、このプロジェクトが利用している外部ライブラリ（cmark-gfm、highlight、PCRE2、JPCRE2）を取得します。**これを忘れるとビルドが失敗します。**
+
+### 手順 5: ビルドする
 
 ```sh
 xcodebuild -scheme QLMarkdown -configuration Release \
   -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO -jobs 1 build
 ```
 
+初回は 5〜15 分ほどかかります。大量のログが流れますが、最後に **`** BUILD SUCCEEDED **`** と表示されれば成功です。
+
 > [!TIP]
-> 外部ビルドツールを使うターゲット（`libpcre2`、`libjpcre2`、`highlight-wrapper`、`cmark-headers`）を並列でビルドすると `Internal inconsistency error: never received target ended message` で失敗することがあります。`-jobs 1` を付けてください。
+> `-jobs 1` は必須です。外部ビルドツールを使うターゲット（`libpcre2`、`libjpcre2`、`highlight-wrapper`、`cmark-headers`）を並列でビルドすると `Internal inconsistency error: never received target ended message` で失敗することがあります。
 
-## インストール
+### 手順 6: `/Applications` にインストールする
 
-Apple の署名証明書が無い環境では、ビルド成果物をそのままコピーしても **Quick Look 拡張が未署名扱いになり PlugInKit に登録されません**。ad-hoc 署名を内側のバイナリから順に付け直す必要があります。
+Apple の署名証明書が無い環境では、ビルド成果物をそのままコピーしても **Quick Look 拡張が未署名扱いになり、macOS に認識されません**。ad-hoc 署名を内側のバイナリから順に付け直す必要があります。
 
-- アプリ本体はエンタイトルメントなし（非サンドボックス）で署名します。設定と補助ファイルをホームディレクトリ配下に読み書きするためです
-- 拡張機能はサンドボックスを維持したまま署名します。サンドボックスが無いと Quick Look 拡張として登録されません
+下のブロックを**まとめてコピーしてターミナルに貼り付け**、Enter を押してください（`QLMarkdown` のフォルダにいる状態で実行します）。
 
 ```sh
 DERIVED=$(xcodebuild -scheme QLMarkdown -configuration Release -showBuildSettings 2>/dev/null \
@@ -171,24 +239,67 @@ sign --entitlements QLExtension/QLExtension.entitlements \
      "$APP/Contents/Extensions/QLMarkdown Shortcut Extension.appex"
 sign --identifier org.sbarex.QLMarkdown "$APP"
 
-codesign -v --deep --strict "$APP"   # 出力が無ければ OK
+codesign -v --deep --strict "$APP"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP"
 open -a "$APP"
 ```
 
-登録されたか確認するには:
+`codesign -v --deep --strict` は**何も出力されなければ成功**です。最後に QLMarkdown の設定画面が開きます。
+
+署名の内訳:
+
+- **アプリ本体はエンタイトルメントなし（非サンドボックス）** で署名します。設定と補助ファイルをホームディレクトリ配下に読み書きするためです
+- **拡張機能はサンドボックスを維持したまま** 署名します。サンドボックスが無いと Quick Look 拡張として登録されません
+
+### 手順 7: Quick Look 拡張を有効にする
+
+**アプリを一度起動する**と、macOS が Quick Look 拡張を認識します（手順 6 の最後で起動済みです）。
+
+システム設定 →「一般」→「ログイン項目と機能拡張」→ 一番下の「Quick Look」を開き、**QLMarkdown** にチェックが入っていることを確認してください。
+
+ターミナルで確認する場合:
 
 ```sh
 pluginkit -mAvvv | grep -A2 org.sbarex.QLMarkdown
 ```
 
-`+ org.sbarex.QLMarkdown.QLExtension` と表示されれば有効です。プレビューが出ない場合はシステム設定 →「一般」→「ログイン項目と機能拡張」→「Quick Look」で有効になっているか確認してください。
+`+ org.sbarex.QLMarkdown.QLExtension` と `+` 付きで表示されれば有効です。
+
+### 動作確認
+
+適当な `.md` ファイルを Finder で選び、**スペースキー**を押してください。Markdown が整形されて表示されれば成功です。
+
+```sh
+printf '# 見出し\n\n**強調**と `コード` と [リンク](https://example.com)\n' > ~/Desktop/test.md
+```
+
+このコマンドでデスクトップにテスト用ファイルを作れます。
+
+### うまくいかないとき
+
+| 症状 | 対処 |
+|---|---|
+| `xcodebuild` が見つからない | 手順 1 の `xcode-select` をやり直す |
+| ビルドが `No such file or directory` で失敗する | `git submodule update --init` を実行し忘れている |
+| `Internal inconsistency error` で失敗する | `-jobs 1` を付ける |
+| `cmake: command not found` | `brew install cmake` |
+| Quick Look で従来どおりのプレビューが出る | 他の Quick Look 拡張と競合しています。システム設定の Quick Look で他をすべてオフにして切り分けてください |
+| プレビューが真っ白 | 一度アプリを起動してから、Finder を再起動（`killall Finder`）してみてください |
+| 「ほかのアプリからのデータへのアクセス権」を毎回聞かれる | 再ビルドすると ad-hoc 署名の ID が変わるため一度は聞かれます。毎回聞かれ続ける場合は、アプリ本体をエンタイトルメント付きで署名していないか確認してください |
 
 > [!WARNING]
 > **Sparkle の自動アップデートは使わないでください。** 署名が一致せず失敗するか、本家のリリース版で上書きされてこのフォークの変更がすべて失われます。
 
-> [!NOTE]
-> ad-hoc 署名は再ビルドのたびに署名 ID が変わります。TCC の許可ダイアログが出た場合は再ビルドが原因です。
+### アンインストール
+
+```sh
+osascript -e 'tell application "QLMarkdown" to quit' 2>/dev/null
+rm -rf /Applications/QLMarkdown.app
+rm -rf ~/Library/Application\ Support/QLMarkdown
+rm -f ~/Library/Preferences/group.org.sbarex.qlmarkdown.plist
+```
+
+フォントも消す場合は Font Book から PlemolJP を削除してください。
 
 ## ライセンス・クレジット
 
