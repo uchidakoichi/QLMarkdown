@@ -119,11 +119,62 @@ Group containers identifiers should be prefixed by requestor's team ID
 
 ## インストール
 
-このフォークにはビルド済みの配布物がありません。ソースからビルドして自分の Mac に入れる形になります。ターミナルを使ったことがなくても進められるよう、順番に説明します。
+方法は 2 つあります。**特に理由がなければ A** をおすすめします。
+
+| | 所要時間 | 必要なもの |
+|---|---|---|
+| **A. ビルド済みアプリを使う** | 5 分ほど | ダウンロードとターミナルのコマンド 1 行 |
+| **B. ソースからビルドする** | 初回 30 分〜1 時間 | Xcode、Homebrew |
 
 **ターミナルの開き方**: `command + スペース` で Spotlight を開き、`ターミナル` と入力して Enter。以下のコマンドは 1 行ずつコピーして貼り付け、Enter を押してください。
 
-所要時間は初回で 30 分〜1 時間程度（うち大半は Xcode のインストールとビルドの待ち時間）です。
+## 方法 A: ビルド済みアプリを使う
+
+### A-1: ダウンロードして `/Applications` に入れる
+
+1. [Releases ページ](https://github.com/uchidakoichi/QLMarkdown/releases/latest) を開きます
+2. **Assets** から `QLMarkdown-X.Y.Z-fork.N.zip` をダウンロードします
+3. zip をダブルクリックして展開し、出てきた **QLMarkdown.app** を `/Applications`（アプリケーションフォルダ）にドラッグします
+
+### A-2: 隔離属性を外す（ここが重要）
+
+このアプリは Apple の開発者証明書で署名・公証されていません（ad-hoc 署名です）。そのままでは macOS がインターネットからダウンロードしたファイルとしてブロックし、**「開発元を検証できないため開けません」** や **「"QLMarkdown.app" は壊れているため開けません」** と表示されます。
+
+ターミナルで次の 1 行を実行してください。
+
+```sh
+xattr -dr com.apple.quarantine /Applications/QLMarkdown.app
+```
+
+何も表示されなければ成功です。
+
+> [!NOTE]
+> これは「ダウンロード済みファイル」の印を外すコマンドです。ソースはこのリポジトリで全て公開されているので、中身が気になる場合は方法 B で自分でビルドしてください。
+
+### A-3: 起動して Quick Look を有効にする
+
+```sh
+open -a /Applications/QLMarkdown.app
+```
+
+**一度起動する**ことで macOS が Quick Look 拡張を認識します。そのうえで、システム設定 →「一般」→「ログイン項目と機能拡張」→ 一番下の「Quick Look」で **QLMarkdown** にチェックが入っていることを確認してください。
+
+プレビューが出ない場合は、次を実行してから Finder を再起動してみてください。
+
+```sh
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/QLMarkdown.app
+killall Finder
+```
+
+### A-4: フォントを入れる（任意・推奨）
+
+既定フォントの PlemolJP Console NF は [後述の手順 3](#手順-3-フォント-plemoljp-console-nf-をインストールする) でインストールできます。入れなくても動きますが、入れると既定の設定どおりの見た目になります。
+
+インストールできたら [動作確認](#動作確認) へ進んでください。
+
+## 方法 B: ソースからビルドする
+
+ターミナルを使ったことがなくても進められるよう、順番に説明します。所要時間は初回で 30 分〜1 時間程度（うち大半は Xcode のインストールとビルドの待ち時間）です。
 
 ### 手順 1: Xcode をインストールする
 
@@ -265,7 +316,7 @@ pluginkit -mAvvv | grep -A2 org.sbarex.QLMarkdown
 
 `+ org.sbarex.QLMarkdown.QLExtension` と `+` 付きで表示されれば有効です。
 
-### 動作確認
+## 動作確認
 
 適当な `.md` ファイルを Finder で選び、**スペースキー**を押してください。Markdown が整形されて表示されれば成功です。
 
@@ -275,7 +326,7 @@ printf '# 見出し\n\n**強調**と `コード` と [リンク](https://example
 
 このコマンドでデスクトップにテスト用ファイルを作れます。
 
-### うまくいかないとき
+## うまくいかないとき
 
 | 症状 | 対処 |
 |---|---|
@@ -290,7 +341,7 @@ printf '# 見出し\n\n**強調**と `コード` と [リンク](https://example
 > [!WARNING]
 > **Sparkle の自動アップデートは使わないでください。** 署名が一致せず失敗するか、本家のリリース版で上書きされてこのフォークの変更がすべて失われます。
 
-### アンインストール
+## アンインストール
 
 ```sh
 osascript -e 'tell application "QLMarkdown" to quit' 2>/dev/null
