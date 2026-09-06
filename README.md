@@ -1,488 +1,199 @@
-[![counter](https://img.shields.io/github/downloads/sbarex/qlmarkdown/latest/total)](https://github.com/sbarex/QLMarkdown/releases) [![counter](https://img.shields.io/github/downloads/sbarex/qlmarkdown/total)](https://github.com/sbarex/QLMarkdown/releases)
-
-[![buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy+me+a+coffee&emoji=&slug=sbarex&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff")](https://www.buymeacoffee.com/sbarex)
-
 <p align="center">
   <img src="assets/img/icon.png" width="150" alt="logo" />
 </p>
 
-# QLMarkdown
+# QLMarkdown (fork)
 
-QLMarkdown is a Mac OS application that provides:
-- a Quick Look extension for viewing Markdown files
-- an experimental Shortcut extension for converting Markdown files to HTML
-- a command-line executable for converting Markdown files to HTML
-- a graphical interface for configuring Quick Look preview display settings. 
+[sbarex/QLMarkdown](https://github.com/sbarex/QLMarkdown) の個人用フォークです。Markdown ファイルの Quick Look プレビュー、設定用の GUI、コマンドラインツール、Shortcut 拡張を提供します。
 
-> **This application is not intended to be used as a standalone markdown file editor or viewer.**
->
-> **Please note that this software is provided "as is", without any warranty of any kind.**
+機能そのものの説明（対応拡張子、Markdown の拡張機能、テーマ、CLI の使い方など）は本家のドキュメントをそのまま残してあります → [README.upstream.md](README.upstream.md)
 
-If you like this application and find it useful, [__buy me a coffee__](https://www.buymeacoffee.com/sbarex)!
+このファイルには**本家との差分**だけを書いています。
 
-The Quick Look extension can also preview rmarkdown files (`.rmd`, _without_ evaluating `r` code), MDX files (`.mdx`, _without_ JSX rendering), Cursor Rulers (`.mdc`), Quarto files (`.qmd`), Api Blueprint files (`.apib`) and textbundle packages. Also `.mermaid` files are rendered wrapped inside a mermaid fenced block (the mermaid extension must be enabled).
+> このアプリケーションは Markdown エディタ／ビューアの代替を目指したものではありません。
+> また、本ソフトウェアは無保証で提供されます。
 
-You can download the last compiled release from [this link](https://github.com/sbarex/QLMarkdown/releases). 
+## 本家との違い
 
-  - [Screenshots](#screenshots)
-    - [Quick Look preview](#quick-look-preview)
-    - [Shortcut Command preview](#shortcut-command-preview)
-  - [Installation](#installation)
-  - [Uninstall](#uninstall)
-  - [Markdown processing](#markdown-processing)
-  - [Differences with GitHub's Markdown engine](#differences-with-githubs-markdown-engine)
-  - [Quick Look Settings](#quick-look-settings)
-    - [Themes](#themes)
-    - [Options](#options)
-    - [Extensions](#extensions)
-      - [Emoji](#emoji)
-      - [Inline local images](#inline-local-images)
-      - [Mathematical expressions](#mathematical-expressions)
-      - [Mermaid diagrams](#mermaid-diagrams)
-      - [Note about external Javascript libraries (MathJax and Mermaid)](#note-about-external-javascript-libraries-mathjax-and-mermaid)
-      - [Syntax Highlighting](#syntax-highlighting)
-      - [YAML header](#yaml-header)
-  - [Command line interface](#command-line-interface)
-  - [Shortcut Commands](#shortcut-commands)
-  - [Build from source](#build-from-source)
-    - [Dependency](#dependency)
-  - [FAQ](#faq)
-  - [Note about security](#note-about-security)
-  - [Note about the developer](#note-about-the-developer)
+### 1. フォントを設定できる
 
+設定画面に **Base font**（本文）と **Code font**（コードブロック・インラインコード）の行を追加しました。ボタンを押すと macOS 標準のフォントパネルが開き、インストール済みの任意のフォントを選べます。
 
-## Screenshots
+- **ファミリ・サイズに加えてウェイトとイタリックも反映されます。** ウェイトは OpenType の `OS/2` テーブルの `usWeightClass` から取得します。これは定義上 CSS の `font-weight` と同じ尺度なので、パネルで選んだ face がそのまま選び戻されます（`NSFontDescriptor` のウェイト特性は粗く、Thin / ExtraLight / Light が同じ値になるため使っていません）
+- 「Reset」でスタイル既定に戻ります
+- 生成される CSS は本家同梱の `default.css` の**後**、シンタックスハイライトとユーザーのカスタム CSS の**前**に挿入されます。つまり既定スタイルより優先され、カスタム CSS では上書きできます
 
+> [!NOTE]
+> カスタム CSS で `font-family` や `font-weight` を指定していると、そちらが後から適用されるためアプリ側のフォント設定は効きません。
 
-### Quick Look preview
+### 2. Markdown 要素ごとのターミナル風配色
 
-![quick look interface](./assets/img/preview_quicklook.png)
+設定画面の **Colors** で `Terminal` を選ぶと、Markdown の要素ごとに ANSI 風の色が割り当てられます（One Light / One Dark 系のパレット、ライト・ダーク両対応）。
 
+| 要素 | ライト | ダーク |
+|---|---|---|
+| `# 見出し1` | `#0184bc` | `#56b6c2` |
+| `## 〜 ######` | `#4078f2` | `#61afef` |
+| `**強調**` | `#383a42` | `#ffffff` |
+| `*斜体*` | `#986801` | `#e5c07b` |
+| `` `インラインコード` `` | `#986801` | `#d19a66` |
+| `[リンク]()` | `#4078f2` + 下線 | `#61afef` + 下線 |
+| `> 引用` | `#50a14f` | `#98c379` |
+| リストのマーカー | `#a626a4` | `#c678dd` |
+| `~~打ち消し~~` / `---` | グレー | グレー |
+| テーブルのヘッダ | `#0184bc` | `#56b6c2` |
 
-### Shortcut Command preview
+コードブロックは対象外で、既存のシンタックスハイライトがそのまま効きます。
 
-![shortcut interface](./assets/img/preview_shortcut.png)
+### 3. Quick Look から開くファイル以外の情報を排除
 
+- レンダリング結果末尾のフッター（アプリ名・バージョン・著作権表示・寄付リンク）を削除
+- 出力 HTML に埋め込まれていた `<!-- File generated with QLMarkdown ... -->` コメントを削除
+- **100 ファイルごとに Quick Look 画面へ挿入されていた宣伝ブロック**（アイコン＋閲覧ファイル数＋寄付リンク＋開発者クレジット）と、そのためのレンダリング回数カウンタを削除
+- 設定画面ツールバーの寄付ボタン、アプリメニューの項目、About ウィンドウのボタン、CLI が表示していた同様のメッセージを削除
+- 上記に伴い不要になった「Show about info」スイッチと `about` 設定も削除
 
-## Installation
+### 4. App Group を使わない
 
-You can download the last compiled release from [this link](https://github.com/sbarex/QLMarkdown/releases) or you can install with [Homebrew](https://brew.sh/):   
+本家は設定と補助ファイルを App Group コンテナ（`~/Library/Group Containers/group.org.sbarex.qlmarkdown`）に置いています。しかし macOS ではこの領域が TCC 保護対象で、**署名に Team ID が無いビルドはアクセスを拒否され、起動のたびに「ほかのアプリからのデータへのアクセス権を求めています」というダイアログが出ます**（許可しても永続化されません）。
 
-```shell
-brew install --cask qlmarkdown
+```
+containermanagerd: [org.sbarex.QLMarkdown] requesting [group.org.sbarex.qlmarkdown]: REJECTED.
+Requestor's signature does not allow it to access a TCC-protected group container.
+Group containers identifiers should be prefixed by requestor's team ID
 ```
 
-_The precompiled app is notarized and signed_.
+そこで保存先を変更しました。
 
-**You must launch the application at least once**. In this way the Quick Look extension will be discovered by the system and some shared files are installed for the Shortcut extension. 
-After the first execution, the Quick Look extension will be available (and enabled) among those present in the System preferences/Extensions. You can check using the button "Open System Settings > … > Quick Look panel…" on the main App.
+| 用途 | 本家 | このフォーク |
+|---|---|---|
+| テーマ・highlight・js キャッシュ | App Group コンテナ | `~/Library/Application Support/QLMarkdown` |
+| 設定 | App Group の preferences | `~/Library/Preferences/group.org.sbarex.qlmarkdown.plist` |
 
-The application store some support files on `~/Library/Group Containers/group.org.sbarex.qlmarkdown`.
-**Please note that the contents of the `highlight` and `js` subfolders may be overwritten by the App.**
+アプリ（非サンドボックス）が `UserDefaults` 経由で書き、サンドボックス下の拡張機能は自分のコンテナへリダイレクトされないよう**このファイルを直接読みます**。パスは `getpwuid` で実ホームを解決するため、サンドボックスの有無に関わらず同じ場所を指します。両方の `.entitlements` から `com.apple.security.application-groups` を削除しています。
 
+### 5. 既定値の変更
 
-## Uninstall
+配布時の初期値を変更しています（設定ファイルが無いときに使われる値）。
 
-To uninstall the application, simply drag it to the trash.
-Support files can be deleted by removing the folder `~/Library/Group Containers/group.org.sbarex.qlmarkdown`.
+| 設定 | 本家 | このフォーク |
+|---|---|---|
+| Appearance | Auto | Dark |
+| Base font size | 自動 | 16 pt |
+| Base / Code font | 未指定 | PlemolJP Console NF ExtraLight (weight 200) |
+| Code font size | 自動 | 18 pt |
+| Colors | Default | Terminal |
+| Footnotes | on | off |
+| Hard break | off | on |
+| Raw HTML (unsafe) | on | off |
+| Strikethrough | single tilde | 無効 |
+| Highlight (`==`) | off | on |
+| GitHub mention | off | on |
+| Sub / Superscript | off | on |
+| Preferred Quick Look size | Auto | 固定 1000 × 5000 px |
 
+既定フォントの [PlemolJP Console NF](https://github.com/yuru7/PlemolJP) が入っていない環境では、CSS のフォールバック（本文は `-apple-system`、コードは `ui-monospace` / Menlo）で表示されます。
 
-## Markdown processing
+### 6. 不具合修正
 
-For maximum compatibility with the Markdown format, the [`cmark-gfm`](https://github.com/github/cmark-gfm) library is used. The library is a GitHub fork of the standard cmark tool to [process the Markdown files](https://github.github.com/gfm/). 
+- **フォントパネルでウェイトを選んでも反映されない** — 選択された face からファミリ名しか取り出しておらず、`font-weight` / `font-style` を出力していませんでした
+- **フォントパネルの候補がすべてグレーアウトして選べない** — パネルを開く前に `NSViewController` へ `makeFirstResponder` していたため、`acceptsFirstResponder` が `false` の同コントローラは受け取れず、ファーストレスポンダがウィンドウに戻ってレスポンダチェーンから外れ、`NSFontPanel` が `changeFont(_:)` の処理先を見つけられずパネル全体を無効化していました。あわせて `AppDelegate` を `NSFontChanging` に準拠させ、フォーカス位置に依存しないようにしています
+- **フォントパネルが画面の隅に開く** — 初回表示時に設定ウィンドウの中央へ配置するようにしました
+- **Preferred Quick Look size が復元されない** — `update(from:)` が未保存のキーに対して値を `nil` で上書きしていたため、保存した固定サイズも既定値も反映されませんでした
+- 設定のリロード時にフォント関連の設定が UI へ反映されていなかった点を修正
 
-Compared to the `cmark-gfm`, these extensions have been added:
-- [`Emoji`](#emoji): translate the emoji shortcodes like `:smile:` to :smile:.
-- [`Heads anchors`](#heads-anchors): create anchors for the heads.
-- `Highlight`: highlight the text contained between the markers `==`.
-- [`Inline local images`](#inline-local-images): embed the image files inside the formatted output (required for the Quick Look preview).
-- `Subscript`: subscript text between the markers `~`.
-- `Superscript`: superscript text between the markers `^`.
-- [`Math`](#mathematical-expressions): format the mathematical expressions with the MathJax library.
-- [`Mermaid`](#mermaid-diagrams): render the diagrams with the Mermaid library.
-- [`Syntax highlighting`](#syntax-highlighting): highlight the code inside fenced block.
-- [`YAML header`](#yaml-header): render the yaml header at the begin of `rmd` or `qmd` files.
+### 7. CLI のオプション追加
 
-
-## Differences with GitHub's Markdown engine
-
-Although GitHub has customized the [`cmark-gfm`](https://github.com/github/cmark-gfm) library, it does not use it directly in the rendering process of Markdown files (see [this repository](https://github.com/github/markup)).
-GitHub uses a number of libraries in Ruby for parsing and formatting source code that cannot easily be converted into a compiled library.
-
-The main difference between this application and GitHub is the formatting of the source code.
-Syntax highlighting uses a different library, so the formatting, colors scheme, and language token recognition are potentially different.
-
-
-## Quick Look Settings
-
-Launching the application, you can configure the options, enable the desired extensions and set the theme for formatting the Quick Look preview of Markdown files.
-
-> To make the settings effective you need to save them (`cmd-s` or menu `File` > `Save settings`) or enable the autosave option.
-
-![main interface](./assets/img/main_interface.png)
-
-The window interface has an inline editor to test the settings with a markdown file. You can open a custom markdown file and export the edited source code.
-
-> Please note that **this application is not intended to be used as a standalone markdown file editor or viewer** but only to set Quick Look preview formatting preferences. 
-
-
-### Themes
-
-You can choose a CSS theme to render the Markdown file. The application is provided with a predefined theme derived from the GitHub style valid both for light and dark appearance. 
-
-You can also use a style to extend the standard theme or to override it. 
-User customized style sheet must have the settings for both light and dark appearance using the CSS media query:
-
-```css
-@media (prefers-color-scheme: dark) { 
-    /* … */ 
-}
-``` 
-
-The custom style is appended after the CSS used for the highlight the source code. In this way you can customize also the style of the syntax highlight. 
-
-The theme popup menu has some extra commands available pressing the `alt` key.
-
-It is possibile to set a custom base font size. This size (in points) will be used for set the dimension of `1rem` in the css style sheet.
-
-
-### Options
-
-|Option|Description|
-|:--|:--|
-|Smart quotes|Convert straight quotes to curly, ```---``` to _em dashes_ and ```--``` to _en dashes_.|
-|Footnotes|Parse the footnotes. **Superscript extension must be disabled.**|
-|Hard break|Render `softbreak` elements as hard line breaks.|
-|No soft break|Render `softbreak` elements as spaces.|
-|Inline HTML (unsafe)|Render raw HTML and unsafe links (`javascript:`, `vbscript:`,  `file:` and `data:`, except for `image/png`, `image/gif`,  `image/jpeg`, or `image/webp` mime types) present in the Markdown file. By default, HTML tags are stripped and unsafe links are replaced by empty strings. _This option is required for preview SVG images_.|
-|Validate UTF|Validate UTF-8 in the input before parsing, replacing illegal sequences with the standard replacement character (U+FFFD &#xFFFD;).|
-|Show about info|Insert a footer with info about the QLMarkdown app.|
-|Show debug info|Insert in the output some debug information.|
-|Render as source code|Show the plain text file (raw version) instead of the formatted output. Syntax highlighting remains.|
-
-
-### Extensions
-
-|Extension|Description|
-|:--|:--|
-|Autolink|Automatically translate URL to link and parse email addresses.|
-|Emoji|Enable the [Emoji extension](#emoji).|
-|GitHub mentions|Translate mentions to link to the GitHub account.|
-|<a name="heads-anchors"></a>Heads anchors|Create anchors for the heads to use as cross internal reference. Each anchor is named with the lowercased caption, stripped of any punctuation marks (except the dash and the underscore) and each space replaced with a dash (`-`). UTF8 character encoding is supported.|
-|Highlight|Highlight the text contained between the markers `==`.|
-|Inline local images|Enable the [Inline local images extension](#inline-local-images).|
-|Math|Enable the [formatting of math expressions](#mathematical-expressions).|
-|Mermaid|Enable the [Mermaid diagram](#mermaid-diagrams) extension.|
-|Strikethrough|Strikethrough text inside tildes. You can choose to detect single or double tilde delimiters.|
-|Sub/Superscript|Allow to subscript text inside `~` tag pairs, and superscript text inside `^` tag pairs. Please note that the **Strikethrough extension must be disabled or set to recognize double `~`**. Also the **Footnotes options must be disabled**.|
-|Syntax highlighting|Enable the [Syntax highlighting extension](#syntax-highlighting). |
-|Table|Parse table as defined by the GitHub extension to the standard Markdown language.|
-|Tag filter|Strip potentially dangerous HTML tags (`<title>`,   `<textarea>`, `<style>`,  `<xmp>`, `<iframe>`, `<noembed>`, `<noframes>`, `<script>`, `<plaintext>`). It only takes effect if the option to include HTML code is enabled.|
-|Task list|Parse task list as defined by the GitHub extension to the standard Markdown language.|
-|YAML header|Enable the [YAML header extension](#YAML-header).|
-
-Tou can also choose if open external link inside the Quick Look preview window or in the default browser.
-
-The `Quick Look window` option allow you to suggest a custom size for the content area of the Quick Look window. macOS does not always honor this setting.
-> _Use with caution on macOS before version 12 Monterey_. 
-
-
-#### Emoji
-
-You can enable the Emoji extension to handle the shortcodes defined by [GitHub](https://api.github.com/emojis). You can render the emoji with an emoticon glyph or using the image provided by GitHub (internet connection required). 
-
-Multibyte emojis are supported, so `:it:` equivalent to the code `\u1f1ee\u1f1f9` must be rendered as the Italian flag :it:. 
-
-Some emojis do not have a glyph equivalent in the standard font and will always be replaced with the corresponding image.
-
-A list of GitHub emoji shortcodes is available [here](https://github.com/ikatyang/emoji-cheat-sheet/blob/master/README.md#people--body).
-
- 
-### Inline local images 
-
-You can enable the Inline image extension required to preview images within the Quick Look window by injecting the images into the HTML code. The Quick Look extension, for security limitations, cannot access to the local images defined inside the Markdown code, so embedding the data it's a way around this limitation. 
-
-For security reasons are handled only URLs without schema (e.g., `./image.jpg`, `image.jpg` or `assets/image.jpg`), or with the `file` schema (e.g.,  `file:///Users/username/Documents/image.jpg`) referring to existing files with an image mime type. 
-With the `file://` schema you *must always set the full path*. For images inside the same folder of the Markdown file do not use the  `file://` schema and also the path `./` is optional.
-
-The extension process both images defined in the Markdown syntax and also with HTML `<img>` tag if the raw HTML code option is enabled.
-
-
-#### Mathematical expressions
-
-This extension allow to format the mathematical expressions using the LaTeX syntax like [GitHub](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions).
-Math rendering capability uses [MathJax](https://www.mathjax.org/) display engine.
-
-Inline math expressions are delimited with a dollar symbol `$`. Block expressions are delimited with a double dollar symbols `$$`.
-
-Alternatively, you can use the ` ```math ` code block syntax to display a math expression as a block.
-
-The [MathJax](https://www.mathjax.org/) library is loaded if the markdown code contains ` ```math ` code blocks or one or more dollar sign.
-
-![shortcut interface](./assets/img/mathjax_menu.png)
-
-
-#### Mermaid diagrams
-
-This extension renders [Mermaid](https://mermaid.js.org/) diagrams directly in the Quick Look preview. Mermaid is a JavaScript-based diagramming and charting tool that uses Markdown-inspired text definitions.
-
-Supported diagram types include:
-- Flowcharts
-- Sequence diagrams
-- Class diagrams
-- State diagrams
-- Entity Relationship diagrams
-- Pie charts
-- And more...
-
-To create a Mermaid diagram, use a fenced code block with the `mermaid` language identifier:
-
-~~~markdown
-```mermaid
-graph TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Do Something]
-    B -->|No| D[Do Something Else]
 ```
-~~~
+--base-font-family <font name>   本文のフォントファミリ
+--base-font-weight <number>      本文の CSS ウェイト (100…900)
+--base-font-italic <on|off>      本文にイタリック face を使う
+--code-font-family <font name>   コードのフォントファミリ
+--code-font-size <number>        コードのフォントサイズ (pt)
+--code-font-weight <number>      コードの CSS ウェイト (100…900)
+--code-font-italic <on|off>      コードにイタリック face を使う
+--color-scheme <default|terminal> Markdown 要素の配色
+```
 
-> **Note:** The library is initialized with `securityLevel: 'strict'` for safety.
+削除したオプション: `--about`
 
-The diagram theme automatically adapts to the system appearance (light/dark mode).
-
-
-#### Note about external Javascript libraries (MathJax and Mermaid)
-
-The Math and Mermaid extension requires some external javascript libraries.
-
-At the first execution of the main Application a local copy of the libraries are downloaded and cached. You can download an updated version at any time from the pop-up menu of each extension.
-
-You can choose to link the corresponding library from the web (internet connection required) from `cdn.jsdelivr.net`, or embed the source code in the html output, but causing an increase in the size of the html file. 
-
-On the status bar of the Application you can view the final file size.
-
-
-#### Syntax Highlighting
-
-This extension highlights the source code inside a fenced box.
-
-The rendering engine is based on the [Highlight](http://www.andre-simon.de/doku/highlight/en/highlight.php) library embedded in the app.
-
-You can customize these settings:
-- Line numbers visibility.
-- Word wrap options.
-- Tabs replacements.
-
-If no language is defined for a fenced block, the code is rendered as a plain text.
-
-> The `math` and `mermaid` languages ​​are ignored if the corresponding extensions are enabled.
-
-
-### YAML header
-
-You can enable the extension to handle a `yaml` header at the beginning of a file. You can choose to enable the extensions to all `.md` files or only for `.rmd` and `.qmd` files.
-
-The header is recognized only if the file start with `---`. The yaml block must be closed with `---` or with `...`.
-
-When the `table` extension is enabled, the header is rendered as a table, otherwise as a block of code. Nested tables are supported.
-
-
-## Command line interface
-
-A `qlmarkdown_cli` command line interface (CLI) is available to perform batch conversion of markdown files.
-
-The tool is located inside the `QLMarkdown.app/Contents/Resources` folder (and should not be moved outside). 
-
-You can create a symbolic link into `usr/local/bin` from the `QLMarkdown` menu, or manually from the Terminal app:
+## ビルド
 
 ```sh
-ln -s /Applications/QLMarkdown.app/Contents/Resources/qlmarkdown_cli /usr/local/bin/qlmarkdown_cli
+git clone https://github.com/uchidakoichi/QLMarkdown.git
+cd QLMarkdown
+git submodule update --init
 ```
 
-```
-OVERVIEW: Command line tool to convert markdown files to html.
-
-Developed by SBAREX 2020 - 2026.
-https://github.com/sbarex/QLMarkdown
-
-USAGE: ql-markdown-cli [<options>] [<files> ...]
-
-ARGUMENTS:
-  <files>                 File to be processed.
-
-MARKDOWN OPTIONS:
-  --appearance <appearance>
-                          (values: auto, light, dark)
-  --base-font-size <number>
-                          Set the base font size, in points.
-  --footnotes <on|off>    Parse the footnotes. (values: on, off)
-  --hard-break <on|off>   Render soft-break elements as hard line breaks. (values: on, off)
-  --no-soft-break <on|off>
-                          Render soft-break elements as spaces. (values: on, off)
-  --raw-html <on|off>     Convert straight quotes to curly. (values: on, off)
-  --render-as-code <on|off>
-                          Show the plain text file (raw version) instead of the formatted output. (values: on, off)
-  --smart-quotes <on|off> Convert straight quotes to curly. (values: on, off)
-  --validate-utf8 <on|off>
-                          Validate UTF-8 in the input before parsing. (values: on, off)
-  --debug <on|off>        Insert in the output some debug information. (values: on, off)
-
-MARKDOWN EXTENSIONS:
-  --autolink <on|off>     Automatically translate URL/email to link. (values: on, off)
-  --emoji <emoji>         Translate the emoji shortcodes.
-        font              - replace with font glyphs
-        images            - replace with web images
-        off               - disabled
-  --github-mentions <on|off>
-                          Translate mentions to link to the GitHub account (values: on, off)
-  --heads-anchor <on|off> Create anchors for the heads. (values: on, off)
-  --highlight <on|off>    Highlight text marked with `==`. (values: on, off)
-  --inline-images <on|off>
-                          Embed local image files inside the formatted output. (values: on, off)
-  --math <path|url>       Format the mathematical expressions with MathJax. You can specify the path or url of the MathJax.js library.
-  --math-embed <on|off>   Embed/Link the MathJax library. (values: on, off)
-  --mermaid <path|url>    Format the mermaid diagrams. You can specify the path or url of the Mermaid.js library.
-  --mermaid-embed <on|off>
-                          Embed/Link the mermaid library. (values: on, off)
-  --table <on|off>        Enable table extension. (values: on, off)
-  --tag-filter <on|off>   Strip potentially dangerous HTML tags. (values: on, off)
-  --tasklist <on|off>     Parse task list. (values: on, off)
-  --strikethrough <strikethrough>
-                          Recognize single/double `~` for the strikethrough style.
-        single            - detect single tilde (~)
-        double            - detect double tilde (~~)
-        off               - disabled
-  --syntax-highlight <on|off>
-                          Highlight the code inside fenced block. (values: on, off)
-  --sub <on|off>          Format subscript characters inside `~` markers. (values: on, off)
-  --sup <on|off>          Format superscript characters inside `^` markers. (values: on, off)
-  --yaml <yaml>           Render the yaml header.
-        rmd               - enabled only for .rmd and .qmd files
-        all               - enabled for all files
-        off               - disabled
-
-OPTIONS:
-  --help
-  -o <path>               Destination output. If you pass a directory, a new file is created with the name of the processed source with .html extension. 
-                          The destination file is always overwritten. If this argument is not provided, the output will be printed to the stdout.
-                          To handle multiple files at time you need to pass the -o argument with a destination folder.
-  -v, --verbose           Verbose mode. Valid only with the -o option.
-  --app <path>            Path of the main QLMarkdown.app application.
-  --show-settings         Show the customized settings and exit.
-  --version               Show the version.
-  -h, --help              Show help information.
-```
-
-> **Note:** the CLI interface do not share the settings with the main Application or the Quick Look extension. 
-
-Any relative paths inside raw HTML fragments are not updated according to the destination folder. 
-
-Unlike the Quick Look extension and the Shortcut command, the CLI tool allows you to link js libraries (MathJax and Mermaid) to file paths as well as web addresses.
-
-
-## Shortcut Commands
-
-The application provides two experimental commands for the `Shortcuts` Application:
-- `Markdown format`: format a markdown file and output the converted html code. 
-- `Markdown convert`: format a markdown file and save the converted html code to a file.
-
-![shortcut interface](./assets/img/preview_shortcut.png)
-
-
-## Build from source
-
-When you clone this repository, remember to fetch also the submodule with `git submodule update --init`.
-
-Some libraries (`Sparkle`, `Yams` and `SwiftSoup`) are handled by the Swift Package Manager. In case of problems it might be useful to reset the cache with the command from the menu `File/Packages/Reset Package Caches`.
-
-
-### Dependency
-
-The app uses the following libraries:
-- [`highlight`](http://www.andre-simon.de/doku/highlight/en/highlight.php) for syntax highlighting.
-- [`PCRE2`](https://github.com/PhilipHazel/pcre2) and [`JPCRE2`](https://github.com/jpcre2/jpcre2) used by the heads extension.
-- [MathJax](https://www.mathjax.org/) for mathematical expressions rendering.
-- [Mermaid](https://mermaid.js.org/) for diagrams rendering.
-
-`libpcre2` requires the `autoconf`, `automake`, and `libtool` utilities to be built. You can install them with [`homebrew`](https://brew.sh/):
+ビルドには以下が必要です。
 
 ```sh
-brew install autoconf automake libtool
-``` 
-
-The compilation of `cmark-gfm` require `cmake` (`brew install cmake`). 
-
-
-## Note about security
-
-**This application does not collect any information about your system or the files it processes.**
-
-To allow the Quick Look preview of local images, the application and extension have a permission exception that only allows read access to the entire system.
-
-On macOS 11 (Big Sur) there is a bug in the Quick Look engine and WebKit that cause the immediate crash of any WebView inside a Quick Look preview. To temporary fix this problem this Quick Look extension uses a `com.apple.security.temporary-exception.mach-lookup.global-name` entitlement. 
-
-
-## FAQ
-
-> Q: The Quick Look preview do not works
-There could be many reasons why the preview isn't working.
-
-First, check that QLMarkdown is enabled in `System Settings` > `General` > `Login Items & Extensions` > `Quick Look`.
-
-![System Settings / General / Login Items & Extensions / Quick Look screenshot](./assets/img/system_setings1.png)
-
-If the application doesn't appear in the list, try dragging it to the Trash, then briefly dragging it back to the Applications folder and launching it. This may force the extension to be automatically recognized.
-
-If the QLMarkdown Quick Look Extension is present (and checked) in the list but the `.md` files are not displayed it is probably due to other applications that have registered support for that type of file. 
-From the `System Settings` > `General` > `Login Items & Extensions` > `Quick Look`, try disabling all Quick Look extensions except QLMarkdown and see if the preview works. If so, re-enable the Quick Look extensions of the other applications one at a time until you find the one causing the conflict.
-
-You can open the System settings panel with the button on the main app. 
-
-If it still doesn't work, it might be because of how other applications have redefined the markdown format (UTI). 
-
-In the Terminal try the following command:
-
-```shell
-touch /tmp/qlmarkdown.md && mdls -name kMDItemContentType /tmp/qlmarkdown.md && rm /tmp/qlmarkdown.md
+brew install autoconf automake libtool cmake
 ```
 
-The output is the UTI associated with the `.md` file.
+`cmake` は `cmark-gfm` の、`autoconf` / `automake` / `libtool` は `libpcre2` のビルドに使います。
 
-This application handle these UTIs:
-- `public.markdown`
-- `com.rstudio.rmarkdown`
-- `com.unknown.md`
-- `io.typora.markdown`
-- `net.daringfireball.markdown`
-- `net.ia.markdown`
-- `org.apiblueprint.file`
-- `org.quarto.qmarkdown`
-- `org.textbundle.package`
-- `com.nutstore.down`
-- `dyn.ah62d4rv4ge8043a` (dynamic UTI for unassociated .md files)
-- `dyn.ah62d4rv4ge81e5pe` (dynamic UTI for unassociated .rmd files)
-- `dyn.ah62d4rv4ge81c5pe` (dynamic UTI for unassociated .qmd files)
-- `dyn.ah62d4rv4ge80c6dmqk` (dynamic UTI for unassociated .apib files)
-- `dyn.ah62d4rv4ge8043pwrzu0w3a` (dynamic UTI for unassociated .mermaid files)
+```sh
+xcodebuild -scheme QLMarkdown -configuration Release \
+  -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO -jobs 1 build
+```
 
-**Please inform me of any other UTI associated to `.md` files.**
+> [!TIP]
+> 外部ビルドツールを使うターゲット（`libpcre2`、`libjpcre2`、`highlight-wrapper`、`cmark-headers`）を並列でビルドすると `Internal inconsistency error: never received target ended message` で失敗することがあります。`-jobs 1` を付けてください。
 
----
+## インストール
 
-> Q: QLMarkdown doesn't appear in the list of applications that can open a Markdown file (for example, from the `Open With…` menu)
+Apple の署名証明書が無い環境では、ビルド成果物をそのままコピーしても **Quick Look 拡張が未署名扱いになり PlugInKit に登録されません**。ad-hoc 署名を内側のバイナリから順に付け直す必要があります。
 
-> Q: Double-clicking the file doesn't open QLMarkdown
+- アプリ本体はエンタイトルメントなし（非サンドボックス）で署名します。設定と補助ファイルをホームディレクトリ配下に読み書きするためです
+- 拡張機能はサンドボックスを維持したまま署名します。サンドボックスが無いと Quick Look 拡張として登録されません
 
-This is a desired behaviour. QLMarkdown is not intended to be used as a standalone markdown file editor or viewer.
+```sh
+DERIVED=$(xcodebuild -scheme QLMarkdown -configuration Release -showBuildSettings 2>/dev/null \
+  | awk -F' = ' '/ BUILT_PRODUCTS_DIR/ {print $2}')
+APP=/Applications/QLMarkdown.app
 
+osascript -e 'tell application "QLMarkdown" to quit' 2>/dev/null
+rm -rf "$APP" && ditto "$DERIVED/QLMarkdown.app" "$APP"
 
-## Note about the developer
+sign() { codesign --force --sign - --timestamp=none "$@"; }
+sign "$APP/Contents/Frameworks/libswift_Concurrency.dylib"
+sign "$APP/Contents/Frameworks/libwrapper_highlight.dylib"
+sign "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc"
+sign "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc"
+sign "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app"
+sign "$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
+sign "$APP/Contents/PlugIns/Markdown QL Extension.appex/Contents/XPCServices/external-launcher.xpc"
+sign --identifier org.sbarex.QLMarkdown.QLExtension \
+     --entitlements QLExtension/QLExtension.entitlements \
+     "$APP/Contents/PlugIns/Markdown QL Extension.appex"
+sign --entitlements QLExtension/QLExtension.entitlements \
+     "$APP/Contents/Extensions/QLMarkdown Shortcut Extension.appex"
+sign --identifier org.sbarex.QLMarkdown "$APP"
 
-I am not primarily an application developer. There may be possible bugs in the code, be patient.
-Also, I am not a native English speaker :sweat_smile:. 
+codesign -v --deep --strict "$APP"   # 出力が無ければ OK
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP"
+open -a "$APP"
+```
 
-Thanks to [setanarut](https://github.com/setanarut) for the app icon and the CSS style.
+登録されたか確認するには:
 
-**This application was developed for pleasure :heart:.**
+```sh
+pluginkit -mAvvv | grep -A2 org.sbarex.QLMarkdown
+```
 
-If you find this application useful, [__buy me a coffee!__](https://www.buymeacoffee.com/sbarex)
+`+ org.sbarex.QLMarkdown.QLExtension` と表示されれば有効です。プレビューが出ない場合はシステム設定 →「一般」→「ログイン項目と機能拡張」→「Quick Look」で有効になっているか確認してください。
+
+> [!WARNING]
+> **Sparkle の自動アップデートは使わないでください。** 署名が一致せず失敗するか、本家のリリース版で上書きされてこのフォークの変更がすべて失われます。
+
+> [!NOTE]
+> ad-hoc 署名は再ビルドのたびに署名 ID が変わります。TCC の許可ダイアログが出た場合は再ビルドが原因です。
+
+## ライセンス・クレジット
+
+本家と同じく [GPLv3](LICENSE.txt) です。
+
+- 本家: [sbarex/QLMarkdown](https://github.com/sbarex/QLMarkdown) — SBAREX
+- 使用ライブラリ: [cmark-gfm](https://github.com/github/cmark-gfm), [highlight](http://www.andre-simon.de/doku/highlight/en/highlight.php), [PCRE2](https://github.com/PhilipHazel/pcre2), [JPCRE2](https://github.com/jpcre2/jpcre2), [MathJax](https://www.mathjax.org/), [Mermaid](https://mermaid.js.org/), [Sparkle](https://sparkle-project.org/), [Yams](https://github.com/jpsim/Yams), [SwiftSoup](https://github.com/scinfu/SwiftSoup), [swift-argument-parser](https://github.com/apple/swift-argument-parser)
+- 既定フォント: [PlemolJP](https://github.com/yuru7/PlemolJP)

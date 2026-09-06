@@ -413,14 +413,12 @@ extension Settings {
                 }
                 cmark_syntax_extension_highlight_add_skipped_languages(ext, "markdown")
                 
-                /*
                 if !self.syntaxFontFamily.isEmpty {
                     cmark_syntax_extension_highlight_set_font_family(ext, self.syntaxFontFamily, Float(self.syntaxFontSize))
                 } else {
                     // Pass a fake value, so will be used the font defined inside the main css file.
-                    cmark_syntax_extension_highlight_set_font_family(ext, "-", 0.0)
+                    cmark_syntax_extension_highlight_set_font_family(ext, "-", Float(self.syntaxFontSize))
                 }
-                */
                 
                 cmark_parser_attach_syntax_extension(parser, ext)
                 
@@ -440,8 +438,6 @@ extension Settings {
         defer {
             cmark_node_free(doc)
         }
-        
-        let about = self.about ? "<div style='font-size: 72%; margin-top: 1.5em; padding-top: .5em; -webkit-user-select: none;'><hr style='height: 0; border: none; border-top: 1px solid rgba(0,0,0,.5); box-shadow: 0 1px 1px rgba(255, 255, 255, .5)'/>\(Self.aboutInfo)</div>\n" : ""
         
         let html_debug = self.renderDebugInfo(baseDir: baseDir)
         // Render
@@ -466,7 +462,7 @@ extension Settings {
             if self.taskListExtension, body.contains("type=\"checkbox\"") {
                 body = self.addTaskListClasses(body)
             }
-            return html_debug + header + body + about
+            return html_debug + header + body
         } else {
             return html_debug + "<p>RENDER FAILED!</p>"
         }
@@ -765,14 +761,11 @@ table.debug td {
         highlight_set_print_line_numbers(self.syntaxLineNumbersOption ? 1 : 0)
         highlight_set_formatting_mode(Int32(self.syntaxWordWrapOption), Int32(self.syntaxTabsOption))
         
-        /*
         if !self.syntaxFontFamily.isEmpty {
             highlight_set_current_font(self.syntaxFontFamily, self.syntaxFontSize > 0 ? String(format: "%.02f", self.syntaxFontSize) : "1rem") // 1rem is rendered as 1rempt, so it is ignored.
         } else {
-            highlight_set_current_font("ui-monospace, -apple-system, BlinkMacSystemFont, sans-serif", "10");
+            highlight_set_current_font("ui-monospace, -apple-system, BlinkMacSystemFont, sans-serif", self.syntaxFontSize > 0 ? String(format: "%.02f", self.syntaxFontSize) : "10")
         }
-         */
-        highlight_set_current_font("ui-monospace, -apple-system, BlinkMacSystemFont, sans-serif", "10");
         
         if let s = colorizeCode(text, "md", theme, true, self.syntaxLineNumbersOption) {
             defer {
@@ -807,6 +800,46 @@ table.debug td {
      *  - header: Header block.
      *  - footer: Code to put at the end of the body.
      */
+
+    /// CSS that colorizes the Markdown elements according to `colorScheme`.
+    ///
+    /// The palette is inspired by the ANSI colors of a terminal (One Light / One Dark), with one
+    /// hue per Markdown element instead of one per token type. It is emitted after the bundled
+    /// `default.css` but before the user custom style sheet, that can still override it.
+    /// Code blocks are not touched: they keep their own syntax highlight colors.
+    func getColorSchemeCSS() -> String {
+        guard self.colorScheme == .terminal else {
+            return ""
+        }
+        
+        // Element -> (light color, dark color)
+        let palette: [(selector: String, extra: String, light: String, dark: String)] = [
+            (".markdown-body h1", "", "#0184bc", "#56b6c2"),
+            (".markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6", "", "#4078f2", "#61afef"),
+            (".markdown-body strong, .markdown-body b", "", "#383a42", "#ffffff"),
+            (".markdown-body em, .markdown-body i", "", "#986801", "#e5c07b"),
+            (".markdown-body :not(pre) > code", "", "#986801", "#d19a66"),
+            (".markdown-body a", "text-decoration: underline;", "#4078f2", "#61afef"),
+            (".markdown-body blockquote", "border-left-color: currentColor;", "#50a14f", "#98c379"),
+            (".markdown-body li::marker", "", "#a626a4", "#c678dd"),
+            (".markdown-body del, .markdown-body s", "", "#a0a1a7", "#7f848e"),
+            (".markdown-body table th", "", "#0184bc", "#56b6c2"),
+        ]
+        
+        var light = ""
+        var dark = ""
+        for entry in palette {
+            light += "\(entry.selector) { color: \(entry.light); \(entry.extra) }\n"
+            dark += "  \(entry.selector) { color: \(entry.dark); \(entry.extra) }\n"
+        }
+        light += ".markdown-body hr { background-color: #a0a1a7; border-color: #a0a1a7; }\n"
+        dark += "  .markdown-body hr { background-color: #5c6370; border-color: #5c6370; }\n"
+        
+        // Keep the media query verbatim: `getCompleteHTML` rewrites it to honour the forced
+        // light/dark appearance setting.
+        return light + "@media (prefers-color-scheme: dark) {\n" + dark + "}\n"
+    }
+
     func getCompleteHTML(title: String, body: String, header: String = "", footer: String = "") -> String {
         var css_doc = ""
         var css_doc_extended = ""
@@ -817,6 +850,38 @@ table.debug td {
         if baseFontSize > 0 {
             css_doc += "<style type='text/css'>\nhtml { font-size: \(baseFontSize)pt;}\n</style>\n"
         }
+        
+        // Custom fonts are emitted after the bundled `default.css` (see the `style` composition
+        // below) so that they take precedence over it, but before the syntax highlight and the
+        // user custom style sheets, that can still override them.
+        var css_font: String = ""
+        let baseSelector = "body, .markdown-body"
+        let codeSelector = "code, kbd, pre, samp, tt, .markdown-body code, .markdown-body pre"
+        if !baseFontFamily.isEmpty {
+            let font = "\"\(baseFontFamily)\", -apple-system, BlinkMacSystemFont, sans-serif"
+            css_font += "\(baseSelector) { font-family: \(font); }\n"
+        }
+        if baseFontWeight > 0 {
+            css_font += "\(baseSelector) { font-weight: \(baseFontWeight); }\n"
+        }
+        if baseFontItalic {
+            css_font += "\(baseSelector) { font-style: italic; }\n"
+        }
+        if !syntaxFontFamily.isEmpty {
+            let font = "\"\(syntaxFontFamily)\", ui-monospace, -apple-system, Menlo, monospace"
+            css_font += "\(codeSelector) { font-family: \(font); }\n"
+        }
+        if syntaxFontSize > 0 {
+            css_font += "\(codeSelector) { font-size: \(syntaxFontSize)pt; }\n"
+        }
+        if syntaxFontWeight > 0 {
+            css_font += "\(codeSelector) { font-weight: \(syntaxFontWeight); }\n"
+        }
+        if syntaxFontItalic {
+            css_font += "\(codeSelector) { font-style: italic; }\n"
+        }
+        
+        let css_colors = self.getColorSchemeCSS()
         
         let formatCSS = { (code: String?) -> String in
             guard let code, !code.isEmpty else {
@@ -928,7 +993,7 @@ securityLevel: 'strict'
 """
         }
 
-        var style = css_doc + css_highlight + css_doc_extended
+        var style = css_doc + formatCSS(css_font) + formatCSS(css_colors) + css_highlight + css_doc_extended
         switch self.appearance {
         case .undefined:
             break
@@ -957,7 +1022,6 @@ securityLevel: 'strict'
 \(processedBody)
 \(wrapper_close)
 \(s_footer)
-\(Self.aboutComment)
 </body>
 </html>
 """

@@ -8,8 +8,9 @@
 import Cocoa
 @preconcurrency import WebKit
 import OSLog
+import CoreText
 
-class ViewController: NSViewController {
+class ViewController: NSViewController, NSFontChanging {
     @objc dynamic var elapsedTimeLabel: String = ""
     
     
@@ -272,6 +273,62 @@ class ViewController: NSViewController {
         }
     }
     
+    @objc dynamic var baseFontFamily: String = Settings.factorySettings.baseFontFamily {
+        didSet {
+            guard oldValue != baseFontFamily else { return }
+            updateFontButtons()
+            isDirty = true
+        }
+    }
+    
+    @objc dynamic var syntaxFontFamily: String = Settings.factorySettings.syntaxFontFamily {
+        didSet {
+            guard oldValue != syntaxFontFamily else { return }
+            updateFontButtons()
+            isDirty = true
+        }
+    }
+    
+    @objc dynamic var syntaxFontSize: CGFloat = Settings.factorySettings.syntaxFontSize {
+        didSet {
+            guard oldValue != syntaxFontSize else { return }
+            updateFontButtons()
+            isDirty = true
+        }
+    }
+    
+    @objc dynamic var baseFontWeight: Int = Settings.factorySettings.baseFontWeight {
+        didSet {
+            guard oldValue != baseFontWeight else { return }
+            updateFontButtons()
+            isDirty = true
+        }
+    }
+    
+    @objc dynamic var baseFontItalic: Bool = Settings.factorySettings.baseFontItalic {
+        didSet {
+            guard oldValue != baseFontItalic else { return }
+            updateFontButtons()
+            isDirty = true
+        }
+    }
+    
+    @objc dynamic var syntaxFontWeight: Int = Settings.factorySettings.syntaxFontWeight {
+        didSet {
+            guard oldValue != syntaxFontWeight else { return }
+            updateFontButtons()
+            isDirty = true
+        }
+    }
+    
+    @objc dynamic var syntaxFontItalic: Bool = Settings.factorySettings.syntaxFontItalic {
+        didSet {
+            guard oldValue != syntaxFontItalic else { return }
+            updateFontButtons()
+            isDirty = true
+        }
+    }
+    
     @objc dynamic var customCSSOverride: Bool = Settings.factorySettings.customCSSOverride {
         didSet {
             guard oldValue != customCSSOverride else { return }
@@ -309,13 +366,6 @@ class ViewController: NSViewController {
             if newValue && isDirty && pauseAutoSave == 0 {
                 saveAction(self)
             }
-        }
-    }
-    
-    @objc dynamic var isAboutVisible: Bool = Settings.factorySettings.about {
-        didSet {
-            guard oldValue != isAboutVisible else { return }
-            isDirty = true
         }
     }
     
@@ -498,6 +548,225 @@ class ViewController: NSViewController {
     
     @IBOutlet weak var fontSizeField: NSTextField!
     @IBOutlet weak var fontSizeStepper: NSStepper!
+    
+    @IBOutlet weak var baseFontButton: NSButton!
+    @IBOutlet weak var syntaxFontButton: NSButton!
+    @IBOutlet weak var colorSchemePopup: NSPopUpButton!
+    
+    /// Which setting the shared font panel is currently editing.
+    enum FontPanelTarget {
+        case base
+        case syntax
+    }
+    internal var fontPanelTarget: FontPanelTarget = .base
+    /// Font currently shown inside the font panel. `NSFontManager.convert(_:)` applies the pending
+    /// change of the panel to this font, so it must be the font passed to `setSelectedFont(_:isMultiple:)`
+    /// and not an arbitrary one, otherwise a size-only change would also reset the family.
+    internal var fontPanelFont: NSFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+    
+    /// Human readable description of a font setting, used as title of the font buttons.
+    private func fontLabel(family: String, weight: Int, italic: Bool, size: CGFloat) -> String {
+        guard !family.isEmpty else {
+            return size > 0 ? String(format: "Default, %.0f pt", size) : "Default"
+        }
+        var label = family
+        if let face = Self.faceName(weight: weight, italic: italic) {
+            label += " " + face
+        }
+        if size > 0 {
+            label += String(format: ", %.0f pt", size)
+        }
+        return label
+    }
+    
+    /// Name of the face matching a CSS weight, mirroring the usual naming of the font families.
+    private static func faceName(weight: Int, italic: Bool) -> String? {
+        let name: String?
+        switch weight {
+        case 100: name = "Thin"
+        case 200: name = "ExtraLight"
+        case 300: name = "Light"
+        case 0, 400: name = nil
+        case 450: name = "Text"
+        case 500: name = "Medium"
+        case 600: name = "SemiBold"
+        case 700: name = "Bold"
+        case 800: name = "ExtraBold"
+        case 900: name = "Black"
+        default: name = "\(weight)"
+        }
+        switch (name, italic) {
+        case (let n?, true): return n + " Italic"
+        case (let n?, false): return n
+        case (nil, true): return "Italic"
+        case (nil, false): return nil
+        }
+    }
+    
+    /// CSS weight (100…900) of a font.
+    ///
+    /// The `usWeightClass` field of the OpenType `OS/2` table is by definition the same scale used
+    /// by the CSS `font-weight` property, so it selects back exactly the face chosen in the font
+    /// panel. The weight trait of the font descriptor is only a coarse fallback: several faces of
+    /// the same family (Thin, ExtraLight, Light…) can share the same trait value.
+    internal static func cssWeight(of font: NSFont) -> Int {
+        if let data = CTFontCopyTable(font as CTFont, CTFontTableTag(kCTFontTableOS2), []) as Data?, data.count >= 6 {
+            let weight = Int(data[4]) << 8 | Int(data[5])
+            if weight >= 1 && weight <= 1000 {
+                return weight
+            }
+        }
+        
+        let traits = font.fontDescriptor.object(forKey: .traits) as? [NSFontDescriptor.TraitKey: Any]
+        let trait = (traits?[.weight] as? CGFloat) ?? 0
+        switch trait {
+        case ..<(-0.7): return 100
+        case ..<(-0.5): return 200
+        case ..<(-0.3): return 300
+        case ..<0.1: return 400
+        case ..<0.25: return 500
+        case ..<0.35: return 600
+        case ..<0.5: return 700
+        case ..<0.6: return 800
+        default: return 900
+        }
+    }
+    
+    /// Refresh the title of the font buttons with the currently selected fonts.
+    internal func updateFontButtons() {
+        baseFontButton?.title = fontLabel(family: baseFontFamily, weight: baseFontWeight, italic: baseFontItalic, size: 0)
+        syntaxFontButton?.title = fontLabel(family: syntaxFontFamily, weight: syntaxFontWeight, italic: syntaxFontItalic, size: syntaxFontSize)
+    }
+    
+    @IBAction func handleSelectBaseFont(_ sender: Any) {
+        fontPanelTarget = .base
+        showFontPanel(family: baseFontFamily, weight: baseFontWeight, italic: baseFontItalic, size: baseFontSize > 0 ? baseFontSize : NSFont.systemFontSize, monospaced: false)
+    }
+    
+    @IBAction func handleSelectSyntaxFont(_ sender: Any) {
+        fontPanelTarget = .syntax
+        showFontPanel(family: syntaxFontFamily, weight: syntaxFontWeight, italic: syntaxFontItalic, size: syntaxFontSize > 0 ? syntaxFontSize : NSFont.systemFontSize, monospaced: true)
+    }
+    
+    @IBAction func handleColorSchemeChanged(_ sender: NSPopUpButton) {
+        isDirty = true
+    }
+    
+    @IBAction func handleResetBaseFont(_ sender: Any) {
+        baseFontFamily = ""
+        baseFontWeight = 0
+        baseFontItalic = false
+    }
+    
+    @IBAction func handleResetSyntaxFont(_ sender: Any) {
+        syntaxFontFamily = ""
+        syntaxFontSize = 0
+        syntaxFontWeight = 0
+        syntaxFontItalic = false
+    }
+    
+    /// The member of `family` matching a CSS weight and the italic trait, so that the font panel
+    /// reopens on the face currently selected.
+    internal static func font(family: String, weight: Int, italic: Bool, size: CGFloat) -> NSFont? {
+        guard weight > 0 || italic else {
+            return NSFont(name: family, size: size)
+        }
+        let members = NSFontManager.shared.availableMembers(ofFontFamily: family) ?? []
+        var fallback: NSFont? = nil
+        for member in members {
+            guard let name = member[0] as? String, let font = NSFont(name: name, size: size) else {
+                continue
+            }
+            let isItalic = font.fontDescriptor.symbolicTraits.contains(.italic)
+            guard isItalic == italic else {
+                continue
+            }
+            let w = Self.cssWeight(of: font)
+            if w == weight {
+                return font
+            }
+            if fallback == nil {
+                fallback = font
+            }
+        }
+        return fallback ?? NSFont(name: family, size: size)
+    }
+    
+    internal func showFontPanel(family: String, weight: Int, italic: Bool, size: CGFloat, monospaced: Bool) {
+        let font: NSFont
+        if !family.isEmpty, let f = Self.font(family: family, weight: weight, italic: italic, size: size) {
+            font = f
+        } else if monospaced {
+            font = NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
+        } else {
+            font = NSFont.systemFont(ofSize: size)
+        }
+        
+        // Do not steal the first responder: `NSFontPanel` enables itself only when the responder
+        // chain of the key/main window handles `changeFont(_:)`, and this view controller is part
+        // of that chain only while the first responder is one of its views.
+        self.fontPanelFont = font
+        
+        let fontManager = NSFontManager.shared
+        fontManager.target = self
+        fontManager.action = #selector(self.changeFont(_:))
+        fontManager.setSelectedFont(font, isMultiple: false)
+        
+        // The shared font panel restores the position of its last use, that can be a corner of a
+        // big screen, far away from the settings window and easy to miss. Move it near the window
+        // that requested it, but only when it is not already on screen to not fight the user that
+        // has deliberately placed it.
+        let wasVisible = NSFontPanel.sharedFontPanelExists && NSFontPanel.shared.isVisible
+        fontManager.orderFrontFontPanel(self)
+        if !wasVisible, let window = self.view.window {
+            let panel = NSFontPanel.shared
+            var frame = panel.frame
+            frame.origin = NSPoint(
+                x: window.frame.midX - frame.width / 2,
+                y: window.frame.midY - frame.height / 2)
+            if let screen = window.screen {
+                frame = panel.constrainFrameRect(frame, to: screen)
+            }
+            panel.setFrameOrigin(frame.origin)
+        }
+    }
+    
+    @objc func changeFont(_ sender: NSFontManager?) {
+        guard let fontManager = sender else {
+            return
+        }
+        let font = fontManager.convert(self.fontPanelFont)
+        self.fontPanelFont = font
+        
+        // Use the family name so that the CSS `font-family` can pick the right face.
+        // The system fonts have a private family name (`.AppleSystemUIFont`) that is useless
+        // inside a style sheet: handle them as "no custom font".
+        var name = font.familyName ?? font.fontName
+        if name.hasPrefix(".") {
+            name = ""
+        }
+        
+        let weight = name.isEmpty ? 0 : Self.cssWeight(of: font)
+        let italic = font.fontDescriptor.symbolicTraits.contains(.italic)
+        
+        switch fontPanelTarget {
+        case .base:
+            baseFontFamily = name
+            baseFontWeight = weight
+            baseFontItalic = italic
+            baseFontSize = font.pointSize
+            useBaseFontSize = true
+        case .syntax:
+            syntaxFontFamily = name
+            syntaxFontWeight = weight
+            syntaxFontItalic = italic
+            syntaxFontSize = font.pointSize
+        }
+    }
+    
+    func validModesForFontPanel(_ fontPanel: NSFontPanel) -> NSFontPanel.ModeMask {
+        return [.collection, .face, .size]
+    }
     
     var byteFormatter = ByteCountFormatter()
     
@@ -1273,6 +1542,7 @@ document.addEventListener('scroll', function(e) {
         if baseFontSize <= 0 {
             baseFontSize = 12
         }
+        updateFontButtons()
         
         doRefresh(self)
         
@@ -1336,7 +1606,6 @@ document.addEventListener('scroll', function(e) {
         initStylesPopup()
         
         self.debugMode = settings.debug
-        self.isAboutVisible = settings.about
         self.renderAsCode = settings.renderAsCode
         
         self.qlWindowSizeCustomized = settings.qlWindowWidth ?? 0 > 0 && settings.qlWindowHeight ?? 0 > 0
@@ -1386,7 +1655,21 @@ document.addEventListener('scroll', function(e) {
         self.syntaxWrapCharacters = settings.syntaxWordWrapOption > 0 ? settings.syntaxWordWrapOption : 80
         self.syntaxTabsOption = settings.syntaxTabsOption
         
-        self.isAboutVisible = settings.about
+        
+        self.useBaseFontSize = settings.baseFontSize > 0
+        if settings.baseFontSize > 0 {
+            self.baseFontSize = settings.baseFontSize
+        }
+        self.baseFontFamily = settings.baseFontFamily
+        self.syntaxFontFamily = settings.syntaxFontFamily
+        self.syntaxFontSize = settings.syntaxFontSize
+        self.baseFontWeight = settings.baseFontWeight
+        self.baseFontItalic = settings.baseFontItalic
+        self.syntaxFontWeight = settings.syntaxFontWeight
+        self.syntaxFontItalic = settings.syntaxFontItalic
+        updateFontButtons()
+        
+        colorSchemePopup.selectItem(withTag: settings.colorScheme.rawValue)
         
         inlineLinkPopup.selectItem(at: settings.openInlineLink ? 0 : 1)
         
@@ -1446,12 +1729,19 @@ document.addEventListener('scroll', function(e) {
         settings.footnotesOption = self.footnotesOption
         
         settings.baseFontSize = self.useBaseFontSize ? self.baseFontSize : 0
+        settings.baseFontFamily = self.baseFontFamily
+        settings.syntaxFontFamily = self.syntaxFontFamily
+        settings.syntaxFontSize = self.syntaxFontSize
+        settings.baseFontWeight = self.baseFontWeight
+        settings.baseFontItalic = self.baseFontItalic
+        settings.syntaxFontWeight = self.syntaxFontWeight
+        settings.syntaxFontItalic = self.syntaxFontItalic
+        settings.colorScheme = MarkdownColorScheme(rawValue: colorSchemePopup.selectedTag()) ?? .default
         settings.customCSSOverride = self.customCSSOverride
         settings.customCSS = self.customCSSFile
         
         settings.openInlineLink = inlineLinkPopup.indexOfSelectedItem == 0
         
-        settings.about = self.isAboutVisible
         
         var msg: [String] = []
         settings.sanitize(allowLinkFile: false, messages: &msg)

@@ -225,6 +225,15 @@ enum StrikethroughMode: Int, Codable {
     case double = 2
 }
 
+/// Color scheme applied to the Markdown elements of the rendered document.
+enum MarkdownColorScheme: Int, Codable {
+    /// Keep the colors defined by the current style.
+    case `default` = 0
+    /// Terminal like colors: each Markdown element (heading, emphasis, inline code, link, …)
+    /// gets its own ANSI inspired color.
+    case terminal = 1
+}
+
 enum OverrideMode: Int {
     case never = 0
     case always = 1
@@ -266,6 +275,14 @@ class Settings: Codable {
         case smartQuotesOption
         case validateUTFOption
         case baseFontSize
+        case baseFontFamily
+        case syntaxFontFamily
+        case syntaxFontSize
+        case baseFontWeight
+        case baseFontItalic
+        case syntaxFontWeight
+        case syntaxFontItalic
+        case colorScheme
         case customCSS
         case customCSSCode
         case customCSSCodeFetched
@@ -274,7 +291,6 @@ class Settings: Codable {
         case renderAsCode
         case qlWindowWidth
         case qlWindowHeight
-        case about
         case debug
     }
 
@@ -334,11 +350,43 @@ class Settings: Codable {
         }
     }
     
-    /// URL of the Application Support folder.
+    /// Home folder of the user, resolved outside of any sandbox container.
+    ///
+    /// `NSHomeDirectory()` returns the container of the process when it is sandboxed, but the app
+    /// and its extensions must agree on a single location for the shared files, so the real home
+    /// folder is read from the passwd database.
+    static var realHomeUrl: URL {
+        if let pw = getpwuid(getuid()), let dir = pw.pointee.pw_dir {
+            return URL(fileURLWithPath: String(cString: dir), isDirectory: true)
+        }
+        return FileManager.default.homeDirectoryForCurrentUser
+    }
+    
+    /// Preferences file shared by the app and its extensions.
+    ///
+    /// This is the file `UserDefaults(suiteName:)` writes for a not sandboxed process. The
+    /// extensions are sandboxed and would be redirected to their own container, so they read this
+    /// file directly (their sandbox grants a read only exception on the whole file system).
+    static var sharedPreferencesUrl: URL {
+        return Self.realHomeUrl
+            .appendingPathComponent("Library")
+            .appendingPathComponent("Preferences")
+            .appendingPathComponent("\(Self.appGroup).plist")
+    }
+    
+    /// URL of the Application Support folder shared by the app and its extensions.
+    ///
+    /// The App Group container is deliberately not used: on recent macOS versions
+    /// `~/Library/Group Containers` is TCC protected and `containerURL(forSecurityApplicationGroupIdentifier:)`
+    /// is rejected unless the code signature carries the team identifier the group belongs to
+    /// (`containermanagerd`: "Group containers identifiers should be prefixed by requestor's team ID").
+    /// A build signed with any other identity is therefore asked for consent at every single launch.
+    /// A plain Application Support folder is reachable by every target without any prompt.
     class var applicationSupportUrl: URL? {
-        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: Self.appGroup)?
+        return Self.realHomeUrl
             .appendingPathComponent("Library")
             .appendingPathComponent("Application Support")
+            .appendingPathComponent("QLMarkdown")
     }
     
     /**
@@ -360,68 +408,16 @@ class Settings: Codable {
     }
     
     /**
-     * Informative message.
-     */
-    static var aboutInfo: String {
-        var title: String = "<a href='https://github.com/sbarex/QLMarkdown'>";
-        if let info = Bundle.main.infoDictionary {
-            title += (info["CFBundleExecutable"] as? String ?? "QLMarkdown") + "</a>"
-            if let version = info["CFBundleShortVersionString"] as? String,
-                let build = info["CFBundleVersion"] as? String {
-                title += ", version \(version) (\(build))"
-            }
-            if let copy = info["NSHumanReadableCopyright"] as? String {
-                title += ".<br />\n\(copy.trimmingCharacters(in: CharacterSet(charactersIn: ". ")) + " with <span style='font-style: normal'>❤️</span>")"
-            }
-        } else {
-            title += "QLMarkdown</a>"
-        }
-        title += ".<br/>\nIf you like this app, <a href='https://www.buymeacoffee.com/sbarex'><strong>buy me a coffee</strong></a>!"
-        return title
-    }
-    
-    /**
-     * Informative hidden message.
-     */
-    static var aboutComment: String {
-        var title: String = "<!--\n\nFile generated with QLMarkdown [https://github.com/sbarex/QLMarkdown] - ";
-        if let info = Bundle.main.infoDictionary {
-            title += (info["CFBundleExecutable"] as? String ?? "QLMarkdown")
-            if let version = info["CFBundleShortVersionString"] as? String,
-                let build = info["CFBundleVersion"] as? String {
-                title += ", version \(version) (\(build))"
-            }
-            if let copy = info["NSHumanReadableCopyright"] as? String {
-                title += ".\n\(copy.trimmingCharacters(in: CharacterSet(charactersIn: ". ")) + " with ❤️")"
-            }
-        }
-        title += "\n\n-->\n"
-        return title
-    }
-    
-    /**
-     * Returns the number of rendered files.
-     *
-     * Each target has its own counter.
-     **/
-    static var renderStats: Int {
-        get {
-            return UserDefaults.standard.integer(forKey: "ql-markdown-render-count");
-        }
-        set {
-            // print("Rendered \(newValue) files.")
-            UserDefaults.standard.setValue(newValue, forKey: "ql-markdown-render-count")
-            UserDefaults.standard.synchronize();
-        }
-    }
-    
-    /**
      * Init the settins from the shared App Groups.
      */
     static func settingsFromSharedFile() -> Settings? {
         var settings: Settings? = nil
         
-        if let defaults = UserDefaults(suiteName: Self.appGroup) {
+        // Read the shared preferences file directly: a sandboxed extension asking
+        // `UserDefaults(suiteName:)` for this domain would be redirected to its own container.
+        if let dict = NSDictionary(contentsOf: Self.sharedPreferencesUrl) as? [String: Any], !dict.isEmpty {
+            settings = Settings(defaults: dict)
+        } else if let defaults = UserDefaults(suiteName: Self.appGroup) {
             settings = Settings(fromUserDefaults: defaults)
         }
         guard let settings else {
@@ -466,36 +462,52 @@ class Settings: Codable {
     
     // MARK: - Instance properties and methods
     
-    var appearance: Appearance = .undefined
+    var appearance: Appearance = .dark
     var autoLinkExtension: Bool = true
     var checkboxExtension: Bool = false
     var headsExtension: Bool = true
-    var highlightExtension: Bool = false
+    var highlightExtension: Bool = true
     var inlineImageExtension: Bool = true
     var mathExtension: JSExtension = .link(url: nil)
     var mermaidExtension: JSExtension = .link(url: nil)
-    var mentionExtension: Bool = false
-    var subExtension: Bool = false
-    var supExtension: Bool = false
+    var mentionExtension: Bool = true
+    var subExtension: Bool = true
+    var supExtension: Bool = true
     var tableExtension: Bool = true
     var tagFilterExtension: Bool = true
     var taskListExtension: Bool = true
     var yamlExtension: YamlMode = .onlyRmd
     var emojiExtension: EmojiMode = .font
-    var strikethroughExtension: StrikethroughMode = .single
+    var strikethroughExtension: StrikethroughMode = .disabled
     var syntaxHighlightExtension: Bool = true
     var syntaxWordWrapOption: Int = 0
     var syntaxLineNumbersOption: Bool = false
     var syntaxTabsOption: Int = 4
 
-    var footnotesOption: Bool = true
-    var hardBreakOption: Bool = false
+    var footnotesOption: Bool = false
+    var hardBreakOption: Bool = true
     var noSoftBreakOption: Bool = false
-    var unsafeHTMLOption: Bool = true
+    var unsafeHTMLOption: Bool = false
     var smartQuotesOption: Bool = true
     var validateUTFOption: Bool = false
     
-    var baseFontSize: CGFloat = 0
+    var baseFontSize: CGFloat = 16
+    /// Font family used to render the document body. Empty means the font defined by the current style.
+    var baseFontFamily: String = "PlemolJP Console NF"
+    /// Font family used to render code blocks and inline code. Empty means the font defined by the current style.
+    var syntaxFontFamily: String = "PlemolJP Console NF"
+    /// Font size (pt) used to render code blocks. Zero means the size defined by the current style.
+    var syntaxFontSize: CGFloat = 18
+    /// CSS weight (100…900) of the document font. Zero means the weight defined by the current style.
+    var baseFontWeight: Int = 200
+    /// Render the document text with the italic face of `baseFontFamily`.
+    var baseFontItalic: Bool = false
+    /// CSS weight (100…900) of the code font. Zero means the weight defined by the current style.
+    var syntaxFontWeight: Int = 200
+    /// Render the code with the italic face of `syntaxFontFamily`.
+    var syntaxFontItalic: Bool = false
+    /// Color scheme applied to the Markdown elements.
+    var colorScheme: MarkdownColorScheme = .terminal
     var customCSS: URL? {
         didSet {
             customCSSFetched = false
@@ -510,9 +522,9 @@ class Settings: Codable {
     var renderAsCode: Bool = false
 
     /// Quick Look window width.
-    var qlWindowWidth: Int? = nil
+    var qlWindowWidth: Int? = 1000
     /// Quick Look window height.
-    var qlWindowHeight: Int? = nil
+    var qlWindowHeight: Int? = 5000
     /// Quick Look window size.
     var qlWindowSize: CGSize {
         if let w = qlWindowWidth, w > 0, let h = qlWindowHeight, h > 0 {
@@ -523,7 +535,6 @@ class Settings: Codable {
     }
     
     /// Show the informative message on the footer.
-    var about: Bool = true
     
     /// Show debug infomations.
     var debug: Bool = false
@@ -573,12 +584,19 @@ class Settings: Codable {
         self.footnotesOption = try container.decode(Bool.self, forKey: .footnotesOption)
         
         self.baseFontSize = try container.decode(CGFloat.self, forKey: .baseFontSize)
+        self.baseFontFamily = try container.decodeIfPresent(String.self, forKey: .baseFontFamily) ?? ""
+        self.syntaxFontFamily = try container.decodeIfPresent(String.self, forKey: .syntaxFontFamily) ?? ""
+        self.syntaxFontSize = try container.decodeIfPresent(CGFloat.self, forKey: .syntaxFontSize) ?? 0
+        self.baseFontWeight = try container.decodeIfPresent(Int.self, forKey: .baseFontWeight) ?? 0
+        self.baseFontItalic = try container.decodeIfPresent(Bool.self, forKey: .baseFontItalic) ?? false
+        self.syntaxFontWeight = try container.decodeIfPresent(Int.self, forKey: .syntaxFontWeight) ?? 0
+        self.syntaxFontItalic = try container.decodeIfPresent(Bool.self, forKey: .syntaxFontItalic) ?? false
+        self.colorScheme = try container.decodeIfPresent(MarkdownColorScheme.self, forKey: .colorScheme) ?? .default
         self.customCSS = try container.decode(URL?.self, forKey: .customCSS)
         self.customCSSFetched = try container.decode(Bool.self, forKey: .customCSSCodeFetched)
         self.customCSSCode = try container.decode(String?.self, forKey: .customCSSCode)
         self.customCSSOverride = try container.decode(Bool.self, forKey: .customCSSOverride)
         
-        self.about = try container.decode(Bool.self, forKey: .about)
         self.debug = try container.decode(Bool.self, forKey: .debug)
         
         self.openInlineLink = try container.decode(Bool.self, forKey: .openInlineLink)
@@ -650,12 +668,19 @@ class Settings: Codable {
         try container.encode(self.footnotesOption, forKey: .footnotesOption)
         
         try container.encode(self.baseFontSize, forKey: .baseFontSize)
+        try container.encode(self.baseFontFamily, forKey: .baseFontFamily)
+        try container.encode(self.syntaxFontFamily, forKey: .syntaxFontFamily)
+        try container.encode(self.syntaxFontSize, forKey: .syntaxFontSize)
+        try container.encode(self.baseFontWeight, forKey: .baseFontWeight)
+        try container.encode(self.baseFontItalic, forKey: .baseFontItalic)
+        try container.encode(self.syntaxFontWeight, forKey: .syntaxFontWeight)
+        try container.encode(self.syntaxFontItalic, forKey: .syntaxFontItalic)
+        try container.encode(self.colorScheme, forKey: .colorScheme)
         try container.encode(self.customCSS, forKey: .customCSS)
         try container.encode(self.customCSSCode, forKey: .customCSSCode)
         try container.encode(self.customCSSFetched, forKey: .customCSSCodeFetched)
         try container.encode(self.customCSSOverride, forKey: .customCSSOverride)
         
-        try container.encode(self.about, forKey: .about)
         try container.encode(self.debug, forKey: .debug)
     
         try container.encode(self.openInlineLink, forKey: .openInlineLink)
@@ -743,12 +768,19 @@ class Settings: Codable {
         self.footnotesOption = s.footnotesOption
         
         self.baseFontSize = s.baseFontSize
+        self.baseFontFamily = s.baseFontFamily
+        self.syntaxFontFamily = s.syntaxFontFamily
+        self.syntaxFontSize = s.syntaxFontSize
+        self.baseFontWeight = s.baseFontWeight
+        self.baseFontItalic = s.baseFontItalic
+        self.syntaxFontWeight = s.syntaxFontWeight
+        self.syntaxFontItalic = s.syntaxFontItalic
+        self.colorScheme = s.colorScheme
         self.customCSS = s.customCSS
         self.customCSSCode = s.customCSSCode
         self.customCSSFetched = s.customCSSFetched
         self.customCSSOverride = s.customCSSOverride
         
-        self.about = s.about
         self.debug = s.debug
         
         self.openInlineLink = s.openInlineLink
@@ -858,6 +890,30 @@ class Settings: Codable {
         if let opt = defaultsDomain[Self.CodingKeys.baseFontSize.rawValue] as? CGFloat {
             baseFontSize = opt
         }
+        if let opt = defaultsDomain[Self.CodingKeys.baseFontFamily.rawValue] as? String {
+            baseFontFamily = opt
+        }
+        if let opt = defaultsDomain[Self.CodingKeys.syntaxFontFamily.rawValue] as? String {
+            syntaxFontFamily = opt
+        }
+        if let opt = defaultsDomain[Self.CodingKeys.syntaxFontSize.rawValue] as? CGFloat {
+            syntaxFontSize = opt
+        }
+        if let opt = defaultsDomain[Self.CodingKeys.baseFontWeight.rawValue] as? Int {
+            baseFontWeight = opt
+        }
+        if let opt = defaultsDomain[Self.CodingKeys.baseFontItalic.rawValue] as? Bool {
+            baseFontItalic = opt
+        }
+        if let opt = defaultsDomain[Self.CodingKeys.syntaxFontWeight.rawValue] as? Int {
+            syntaxFontWeight = opt
+        }
+        if let opt = defaultsDomain[Self.CodingKeys.syntaxFontItalic.rawValue] as? Bool {
+            syntaxFontItalic = opt
+        }
+        if let n = defaultsDomain[Self.CodingKeys.colorScheme.rawValue] as? Int, let scheme = MarkdownColorScheme(rawValue: n) {
+            colorScheme = scheme
+        }
         
         if let opt = defaultsDomain[Self.CodingKeys.customCSS.rawValue] as? String, !opt.isEmpty {
             if !opt.hasPrefix("/"), let path = Settings.stylesFolder{
@@ -870,9 +926,6 @@ class Settings: Codable {
             customCSSOverride = opt
         }
         
-        if let opt = defaultsDomain[Self.CodingKeys.about.rawValue] as? Bool {
-            about = opt
-        }
         
         if let opt = defaultsDomain[Self.CodingKeys.debug.rawValue] as? Bool {
             debug = opt
@@ -884,15 +937,13 @@ class Settings: Codable {
         if let opt = defaultsDomain[Self.CodingKeys.renderAsCode.rawValue] as? Bool {
             renderAsCode = opt
         }
-        if let opt = defaultsDomain[Self.CodingKeys.qlWindowWidth.rawValue] as? Int, opt > 0 {
-            qlWindowWidth = opt
-        } else {
-            qlWindowWidth = nil
+        // Only override the default when the key is stored: an absent key must keep the factory
+        // value, a stored zero means "auto".
+        if let opt = defaultsDomain[Self.CodingKeys.qlWindowWidth.rawValue] as? Int {
+            qlWindowWidth = opt > 0 ? opt : nil
         }
-        if let opt = defaultsDomain[Self.CodingKeys.qlWindowHeight.rawValue] as? Int, opt > 0 {
-            qlWindowHeight = opt
-        } else {
-            qlWindowHeight = nil
+        if let opt = defaultsDomain[Self.CodingKeys.qlWindowHeight.rawValue] as? Int {
+            qlWindowHeight = opt > 0 ? opt : nil
         }
 
         sanitize()
@@ -924,6 +975,17 @@ class Settings: Codable {
         if baseFontSize < 0 {
             self.baseFontSize = 0
         }
+        if syntaxFontSize < 0 {
+            self.syntaxFontSize = 0
+        }
+        if baseFontWeight < 0 || baseFontWeight > 1000 {
+            self.baseFontWeight = 0
+        }
+        if syntaxFontWeight < 0 || syntaxFontWeight > 1000 {
+            self.syntaxFontWeight = 0
+        }
+        self.baseFontFamily = self.baseFontFamily.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.syntaxFontFamily = self.syntaxFontFamily.trimmingCharacters(in: .whitespacesAndNewlines)
         
         self.mathExtension.sanitize(cacheUrl: mathJaxFileUrl, cdnUrl: Self.mathJaxWebUrl, allowLinkFile: allowLinkFile)
         self.mermaidExtension.sanitize(cacheUrl: mermaidFileUrl, cdnUrl: Self.mermaidWebUrl, allowLinkFile: allowLinkFile)

@@ -144,35 +144,10 @@ class PreviewViewController: NSViewController, QLPreviewingController {
         )
 
         let settings = Settings.shared
-        Settings.renderStats += 1
 
         let markdown_url = Settings.getMarkdownFile(from: url)
-        var text = try settings.render(file: markdown_url, baseDir: markdown_url.deletingLastPathComponent().path)
+        let text = try settings.render(file: markdown_url, baseDir: markdown_url.deletingLastPathComponent().path)
         
-        if Settings.renderStats > 0 && Settings.renderStats % 100 == 0 {
-            let icon: String
-            if let url = Bundle.main.url(forResource: "icon", withExtension: "png"), let data = try? Data(contentsOf: url) {
-                icon = data.base64EncodedString()
-            } else {
-                icon = ""
-            }
-            
-            let msg =
-                """
-                        <div id="container" style="font-size: 1.5rem">
-                            <h1><img src="data:image/png;base64,\(icon)" width="75" height="75" alt="logo" id="logo" /> QLMarkdown</h1>
-                            <p>Thanks to this application you have viewed over <b>\(Settings.renderStats) files</b>.</p>
-                            <p>If you find it useful and you have the possibility, consider <a href="https://buymeacoffee.com/sbarex"><b>buying me a coffee!</b></a></p>
-                            <br />
-                            <hr size="1" />
-                            <p class="small">Developed by SBAREX with ❤️ | <a href="https://github.com/sbarex/QLMarkdown">https://github.com/sbarex/QLMarkdown</a></p>
-                            </p>
-                        </div>
-                """
-
-            text += msg
-        }
-
         let html = settings.getCompleteHTML(title: url.lastPathComponent, body: text)
 
         return html

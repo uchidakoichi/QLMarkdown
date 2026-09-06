@@ -97,11 +97,47 @@ enum YamlArgumentEnum: String, ExpressibleByArgument {
     }
 }
 
+enum ColorSchemeEnum: String, ExpressibleByArgument, CaseIterable {
+    case `default`
+    case terminal
+    
+    var scheme: MarkdownColorScheme {
+        switch self {
+        case .default: return .default
+        case .terminal: return .terminal
+        }
+    }
+}
+
 struct OptionsOptions: ParsableArguments {
     @Option var appearance: AppearanceEnum? = nil
     
     @Option(help: ArgumentHelp("Set the base font size, in points.", valueName: "number"))
     var baseFontSize: Float? = nil
+    
+    @Option(help: ArgumentHelp("Set the font family used for the document text.", valueName: "font name"))
+    var baseFontFamily: String? = nil
+    
+    @Option(help: ArgumentHelp("Set the font family used for code blocks and inline code.", valueName: "font name"))
+    var codeFontFamily: String? = nil
+    
+    @Option(help: ArgumentHelp("Set the font size used for code blocks, in points.", valueName: "number"))
+    var codeFontSize: Float? = nil
+    
+    @Option(help: ArgumentHelp("Set the CSS weight (100…900) of the document font.", valueName: "number"))
+    var baseFontWeight: Int? = nil
+    
+    @Option(help: ArgumentHelp("Use the italic face of the document font.", valueName: "on|off"))
+    var baseFontItalic: BoolArgumentEnum? = nil
+    
+    @Option(help: ArgumentHelp("Set the CSS weight (100…900) of the code font.", valueName: "number"))
+    var codeFontWeight: Int? = nil
+    
+    @Option(help: ArgumentHelp("Use the italic face of the code font.", valueName: "on|off"))
+    var codeFontItalic: BoolArgumentEnum? = nil
+    
+    @Option(help: ArgumentHelp("Colorize the Markdown elements with terminal like colors.", valueName: "default|terminal"))
+    var colorScheme: ColorSchemeEnum? = nil
     
     @Option(help: ArgumentHelp("Parse the footnotes.", valueName: "on|off"))
     var footnotes: BoolArgumentEnum? = nil
@@ -124,8 +160,6 @@ struct OptionsOptions: ParsableArguments {
     @Option(help: ArgumentHelp("Validate UTF-8 in the input before parsing.", valueName: "on|off"))
     var validateUtf8: BoolArgumentEnum? = nil
     
-    @Option(help: ArgumentHelp("Show/Hide a footer with info about QLMarkdown.", valueName: "on|off", visibility: .private))
-    var about: BoolArgumentEnum? = nil
     
     @Option(help: ArgumentHelp("Insert in the output some debug information.", valueName: "on|off"))
     var debug: BoolArgumentEnum? = nil
@@ -282,8 +316,29 @@ struct QLMarkdownCLI: ParsableCommand {
         if let size = options.baseFontSize {
             settings.baseFontSize = CGFloat(size)
         }
-        if let o = options.about {
-            settings.about = o == .on
+        if let family = options.baseFontFamily {
+            settings.baseFontFamily = family
+        }
+        if let family = options.codeFontFamily {
+            settings.syntaxFontFamily = family
+        }
+        if let size = options.codeFontSize {
+            settings.syntaxFontSize = CGFloat(size)
+        }
+        if let weight = options.baseFontWeight {
+            settings.baseFontWeight = weight
+        }
+        if let o = options.baseFontItalic {
+            settings.baseFontItalic = o == .on
+        }
+        if let weight = options.codeFontWeight {
+            settings.syntaxFontWeight = weight
+        }
+        if let o = options.codeFontItalic {
+            settings.syntaxFontItalic = o == .on
+        }
+        if let scheme = options.colorScheme {
+            settings.colorScheme = scheme.scheme
         }
         if let o = options.debug {
             settings.debug = o == .on
@@ -397,6 +452,14 @@ struct QLMarkdownCLI: ParsableCommand {
         print("\nMARKDOWN OPTIONS:")
         print("    --appearance: \(settings.appearance.name)")
         print("    --base-font-size: \(settings.baseFontSize > 0 ? "\(settings.baseFontSize) pt" : "auto")")
+        print("    --base-font-family: \(settings.baseFontFamily.isEmpty ? "auto" : settings.baseFontFamily)")
+        print("    --code-font-family: \(settings.syntaxFontFamily.isEmpty ? "auto" : settings.syntaxFontFamily)")
+        print("    --code-font-size: \(settings.syntaxFontSize > 0 ? "\(settings.syntaxFontSize) pt" : "auto")")
+        print("    --base-font-weight: \(settings.baseFontWeight > 0 ? "\(settings.baseFontWeight)" : "auto")")
+        print("    --base-font-italic: \(settings.baseFontItalic ? "on" : "off")")
+        print("    --code-font-weight: \(settings.syntaxFontWeight > 0 ? "\(settings.syntaxFontWeight)" : "auto")")
+        print("    --code-font-italic: \(settings.syntaxFontItalic ? "on" : "off")")
+        print("    --color-scheme: \(settings.colorScheme == .terminal ? "terminal" : "default")")
         print("    --footnotes: \(settings.footnotesOption ? "on" : "off")")
         print("    --hard-break: \(settings.hardBreakOption ? "on" : "off")")
         print("    --no-soft-break: \(settings.noSoftBreakOption ? "on" : "off")")
@@ -518,20 +581,10 @@ struct QLMarkdownCLI: ParsableCommand {
             }
         }
 
-        var show_stats = false
         var n = 0
         defer {
             if verbose {
                 print(n != 1 ? "Processed \(n) files." : "Processed 1 file.")
-            }
-            
-            if show_stats {
-                print("""
-    *** *** *** *** *** ***
-    Thanks to this tool you have converted over \(Settings.renderStats) files.
-    If you find it useful and you have the possibility, consider buying me a coffee! (https://buymeacoffee.com/sbarex)
-    *** *** *** *** *** ***
-    """)
             }
         }
         
@@ -550,11 +603,6 @@ struct QLMarkdownCLI: ParsableCommand {
                 
                 let text = try settings.render(file: markdown_url, baseDir: markdown_url.deletingLastPathComponent().path)
                 let html = settings.getCompleteHTML(title: url.lastPathComponent, body: text)
-                
-                Settings.renderStats += 1
-                if !show_stats && Settings.renderStats > 0 && Settings.renderStats % 100 == 0 {
-                    show_stats = true
-                }
                 
                 var output: URL?
                 if let dest {

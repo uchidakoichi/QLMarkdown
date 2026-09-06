@@ -206,11 +206,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         updater?.updateCheckInterval = TimeInterval(sender.tag)
     }
     
-    @IBAction func buyMeACoffee(_ sender: Any?) {
-        let url = URL(string: "https://www.buymeacoffee.com/sbarex")!
-        NSWorkspace.shared.open(url)
-    }
-    
     @IBAction func printPreview(_ sender: Any?) {
         guard let controller = NSApplication.shared.windows.first(where: {$0.windowController?.contentViewController is ViewController })?.windowController?.contentViewController as? ViewController else {
             return
@@ -238,3 +233,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 }
 
+
+// MARK: - Font panel
+
+/// `NSFontPanel` enables its font list only when the responder chain of the key/main window
+/// handles `changeFont(_:)`. The `ViewController` is part of that chain only while the first
+/// responder is one of its views, so the application delegate — that always closes the chain —
+/// forwards the message to it.
+extension AppDelegate: NSFontChanging {
+    private var fontPanelController: ViewController? {
+        if let controller = NSApplication.shared.mainWindow?.windowController?.contentViewController as? ViewController {
+            return controller
+        }
+        return NSApplication.shared.windows.first(where: { $0.windowController?.contentViewController is ViewController })?.windowController?.contentViewController as? ViewController
+    }
+    
+    func changeFont(_ sender: NSFontManager?) {
+        self.fontPanelController?.changeFont(sender)
+    }
+    
+    func validModesForFontPanel(_ fontPanel: NSFontPanel) -> NSFontPanel.ModeMask {
+        return [.collection, .face, .size]
+    }
+}

@@ -231,6 +231,38 @@ extension Settings {
             defaults.removeObject(forKey: Self.CodingKeys.baseFontSize.rawValue)
         }
         
+        if !baseFontFamily.isEmpty {
+            defaults.set(baseFontFamily, forKey: Self.CodingKeys.baseFontFamily.rawValue)
+        } else {
+            defaults.removeObject(forKey: Self.CodingKeys.baseFontFamily.rawValue)
+        }
+        
+        if !syntaxFontFamily.isEmpty {
+            defaults.set(syntaxFontFamily, forKey: Self.CodingKeys.syntaxFontFamily.rawValue)
+        } else {
+            defaults.removeObject(forKey: Self.CodingKeys.syntaxFontFamily.rawValue)
+        }
+        if syntaxFontSize > 0 {
+            defaults.set(syntaxFontSize, forKey: Self.CodingKeys.syntaxFontSize.rawValue)
+        } else {
+            defaults.removeObject(forKey: Self.CodingKeys.syntaxFontSize.rawValue)
+        }
+        
+        if baseFontWeight > 0 {
+            defaults.set(baseFontWeight, forKey: Self.CodingKeys.baseFontWeight.rawValue)
+        } else {
+            defaults.removeObject(forKey: Self.CodingKeys.baseFontWeight.rawValue)
+        }
+        defaults.set(baseFontItalic, forKey: Self.CodingKeys.baseFontItalic.rawValue)
+        if syntaxFontWeight > 0 {
+            defaults.set(syntaxFontWeight, forKey: Self.CodingKeys.syntaxFontWeight.rawValue)
+        } else {
+            defaults.removeObject(forKey: Self.CodingKeys.syntaxFontWeight.rawValue)
+        }
+        defaults.set(syntaxFontItalic, forKey: Self.CodingKeys.syntaxFontItalic.rawValue)
+        
+        defaults.set(colorScheme.rawValue, forKey: Self.CodingKeys.colorScheme.rawValue)
+        
         let file: String
         if let url = customCSS {
             if let folder = Settings.stylesFolder?.path, url.path.hasPrefix(folder) {
@@ -244,7 +276,6 @@ extension Settings {
         }
         defaults.set(customCSSOverride, forKey: Self.CodingKeys.customCSSOverride.rawValue)
                 
-        defaults.set(about, forKey: Self.CodingKeys.about.rawValue)
         defaults.set(debug, forKey: Self.CodingKeys.debug.rawValue)
         defaults.set(openInlineLink, forKey: Self.CodingKeys.openInlineLink.rawValue)
         defaults.set(renderAsCode, forKey: Self.CodingKeys.renderAsCode.rawValue)

@@ -89,13 +89,6 @@
                                                 <action selector="revealCLITool:" target="Voe-Tx-rLC" id="a9e-gM-h4J"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem isSeparatorItem="YES" id="Sfw-nh-khG"/>
-                                        <menuItem title="Buy me a coffee…" image="cup.and.saucer.fill" catalog="system" id="cHz-XF-UAt">
-                                            <modifierMask key="keyEquivalentModifierMask"/>
-                                            <connections>
-                                                <action selector="buyMeACoffee:" target="Ady-hI-5gd" id="SB1-Ng-Bb0"/>
-                                            </connections>
-                                        </menuItem>
                                         <menuItem isSeparatorItem="YES" id="wFC-TO-SCJ"/>
                                         <menuItem title="Services" id="NMo-om-nkz">
                                             <modifierMask key="keyEquivalentModifierMask"/>
@@ -775,16 +768,9 @@
                             <allowedToolbarItems>
                                 <toolbarItem implicitItemIdentifier="NSToolbarSpaceItem" id="OkB-Ti-gMh"/>
                                 <toolbarItem implicitItemIdentifier="NSToolbarFlexibleSpaceItem" id="6pH-Qf-g7v"/>
-                                <toolbarItem implicitItemIdentifier="D6465400-1A21-458E-AAE1-53943BDD0C27" label="Buy me a coffee" paletteLabel="Buy me a coffee" tag="-1" sizingBehavior="auto" id="the-Rm-DRx">
-                                    <imageReference key="image" image="cup.and.saucer" catalog="system" symbolScale="default"/>
-                                    <connections>
-                                        <action selector="buyMeACoffee:" target="Oky-zY-oP4" id="b19-xY-Uuw"/>
-                                    </connections>
-                                </toolbarItem>
                             </allowedToolbarItems>
                             <defaultToolbarItems>
                                 <toolbarItem reference="6pH-Qf-g7v"/>
-                                <toolbarItem reference="the-Rm-DRx"/>
                             </defaultToolbarItems>
                         </toolbar>
                         <connections>
@@ -1705,24 +1691,6 @@
                                                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                                     </textFieldCell>
                                                 </textField>
-                                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="s9x-wg-UTg">
-                                                    <rect key="frame" x="386" y="8" width="102" height="16"/>
-                                                    <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="Show about info" id="5IO-mU-4yw">
-                                                        <font key="font" metaFont="system"/>
-                                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                                                    </textFieldCell>
-                                                </textField>
-                                                <switch toolTip="Save changes to settings immediately. " horizontalHuggingPriority="750" verticalHuggingPriority="750" controlSize="mini" baseWritingDirection="leftToRight" alignment="left" translatesAutoresizingMaskIntoConstraints="NO" id="XA7-Gl-MRu">
-                                                    <rect key="frame" x="344" y="8" width="36" height="16"/>
-                                                    <connections>
-                                                        <binding destination="XfG-lQ-9wD" name="value" keyPath="self.isAboutVisible" id="yEn-7v-IXL">
-                                                            <dictionary key="options">
-                                                                <bool key="NSAllowsEditingMultipleValuesSelection" value="NO"/>
-                                                            </dictionary>
-                                                        </binding>
-                                                    </connections>
-                                                </switch>
                                                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="EHx-19-1D3">
                                                     <rect key="frame" x="18" y="270" width="164" height="16"/>
                                                     <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="Base font size:" id="qGt-eO-b6T">
@@ -1758,6 +1726,103 @@
                                                         <binding destination="XfG-lQ-9wD" name="enabled" keyPath="self.useBaseFontSize" id="Ufy-TS-ZVL"/>
                                                     </connections>
                                                 </stepper>
+                                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Bft-lb-001">
+                                                    <rect key="frame" x="18" y="240" width="164" height="16"/>
+                                                    <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="Base font:" id="Bfc-cl-007">
+                                                        <font key="font" metaFont="system"/>
+                                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                    </textFieldCell>
+                                                </textField>
+                                                <button toolTip="Select the font used to render the document text." verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Bft-bt-002">
+                                                    <rect key="frame" x="188" y="236" width="220" height="24"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="220" id="Cfa-wd-001"/>
+                                                    </constraints>
+                                                    <buttonCell key="cell" type="push" title="Default" bezelStyle="rounded" alignment="center" lineBreakMode="truncatingTail" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Bfc-cl-008">
+                                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                                        <font key="font" metaFont="system"/>
+                                                    </buttonCell>
+                                                    <connections>
+                                                        <action selector="handleSelectBaseFont:" target="XfG-lQ-9wD" id="Cfa-ac-001"/>
+                                                    </connections>
+                                                </button>
+                                                <button toolTip="Use the font defined by the current style." verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Bft-rs-003">
+                                                    <rect key="frame" x="416" y="236" width="70" height="24"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="70" id="Cfa-wd-002"/>
+                                                    </constraints>
+                                                    <buttonCell key="cell" type="push" title="Reset" bezelStyle="rounded" alignment="center" lineBreakMode="truncatingTail" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Bfc-cl-009">
+                                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                                        <font key="font" metaFont="system"/>
+                                                    </buttonCell>
+                                                    <connections>
+                                                        <action selector="handleResetBaseFont:" target="XfG-lQ-9wD" id="Cfa-ac-002"/>
+                                                    </connections>
+                                                </button>
+                                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Sft-lb-004">
+                                                    <rect key="frame" x="18" y="210" width="164" height="16"/>
+                                                    <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="Code font:" id="Sfc-cl-010">
+                                                        <font key="font" metaFont="system"/>
+                                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                    </textFieldCell>
+                                                </textField>
+                                                <button toolTip="Select the font used to render code blocks and inline code." verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Sft-bt-005">
+                                                    <rect key="frame" x="188" y="206" width="220" height="24"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="220" id="Cfa-wd-003"/>
+                                                    </constraints>
+                                                    <buttonCell key="cell" type="push" title="Default" bezelStyle="rounded" alignment="center" lineBreakMode="truncatingTail" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Sfc-cl-011">
+                                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                                        <font key="font" metaFont="system"/>
+                                                    </buttonCell>
+                                                    <connections>
+                                                        <action selector="handleSelectSyntaxFont:" target="XfG-lQ-9wD" id="Cfa-ac-003"/>
+                                                    </connections>
+                                                </button>
+                                                <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Clr-lb-001">
+                                                    <rect key="frame" x="18" y="180" width="164" height="16"/>
+                                                    <textFieldCell key="cell" lineBreakMode="clipping" alignment="right" title="Colors:" id="Clc-cl-001">
+                                                        <font key="font" metaFont="system"/>
+                                                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                    </textFieldCell>
+                                                </textField>
+                                                <popUpButton toolTip="Colorize the Markdown elements (headings, emphasis, inline code, links, …) with terminal like colors." allowsExpansionToolTips="YES" horizontalHuggingPriority="249" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Clr-pu-002">
+                                                    <rect key="frame" x="188" y="176" width="220" height="24"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="220" id="Clr-wd-001"/>
+                                                    </constraints>
+                                                    <popUpButtonCell key="cell" type="push" title="Default" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="Clr-mi-001" id="Clc-pc-002">
+                                                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                        <font key="font" metaFont="message"/>
+                                                        <menu key="menu" id="Clr-mn-001">
+                                                            <items>
+                                                                <menuItem title="Default" state="on" id="Clr-mi-001"/>
+                                                                <menuItem title="Terminal" tag="1" id="Clr-mi-002">
+                                                                    <modifierMask key="keyEquivalentModifierMask"/>
+                                                                </menuItem>
+                                                            </items>
+                                                        </menu>
+                                                    </popUpButtonCell>
+                                                    <connections>
+                                                        <action selector="handleColorSchemeChanged:" target="XfG-lQ-9wD" id="Clr-ac-001"/>
+                                                    </connections>
+                                                </popUpButton>
+                                                <button toolTip="Use the font defined by the current style." verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Sft-rs-006">
+                                                    <rect key="frame" x="416" y="206" width="70" height="24"/>
+                                                    <constraints>
+                                                        <constraint firstAttribute="width" constant="70" id="Cfa-wd-004"/>
+                                                    </constraints>
+                                                    <buttonCell key="cell" type="push" title="Reset" bezelStyle="rounded" alignment="center" lineBreakMode="truncatingTail" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Sfc-cl-012">
+                                                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                                        <font key="font" metaFont="system"/>
+                                                    </buttonCell>
+                                                    <connections>
+                                                        <action selector="handleResetSyntaxFont:" target="XfG-lQ-9wD" id="Cfa-ac-004"/>
+                                                    </connections>
+                                                </button>
                                                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Vsx-tk-3Vv">
                                                     <rect key="frame" x="188" y="270" width="16" height="16"/>
                                                     <buttonCell key="cell" type="check" bezelStyle="regularSquare" imagePosition="left" state="on" inset="2" id="emo-jz-1Ic">
@@ -1957,7 +2022,6 @@
                                                 <constraint firstItem="X7y-52-Juj" firstAttribute="firstBaseline" secondItem="QND-4B-AbJ" secondAttribute="firstBaseline" id="6Ah-yr-hvG"/>
                                                 <constraint firstItem="g31-cS-g4Y" firstAttribute="leading" secondItem="uGz-Oo-fnE" secondAttribute="leading" id="6y7-kp-43f"/>
                                                 <constraint firstItem="C8t-xT-dXa" firstAttribute="width" secondItem="Ccb-oe-cYh" secondAttribute="width" id="7Bj-ML-XqQ"/>
-                                                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="s9x-wg-UTg" secondAttribute="trailing" constant="20" symbolic="YES" id="834-wZ-2Xg"/>
                                                 <constraint firstItem="uGz-Oo-fnE" firstAttribute="top" secondItem="iLd-SC-WJ6" secondAttribute="bottom" constant="10" symbolic="YES" id="CQR-mv-MeN"/>
                                                 <constraint firstItem="EHx-19-1D3" firstAttribute="firstBaseline" secondItem="fVi-EX-Aci" secondAttribute="firstBaseline" id="CeA-Bo-jNs"/>
                                                 <constraint firstItem="sCa-ZB-Sb2" firstAttribute="leading" secondItem="Ccb-oe-cYh" secondAttribute="leading" id="ICi-Kf-zMI"/>
@@ -1977,7 +2041,6 @@
                                                 <constraint firstItem="0el-fG-DCh" firstAttribute="leading" secondItem="Ccb-oe-cYh" secondAttribute="leading" id="WVp-Q9-ZuK"/>
                                                 <constraint firstItem="uGz-Oo-fnE" firstAttribute="firstBaseline" secondItem="C8t-xT-dXa" secondAttribute="firstBaseline" id="YAk-bk-AvO"/>
                                                 <constraint firstItem="iLd-SC-WJ6" firstAttribute="leading" secondItem="dOo-mR-WPE" secondAttribute="leading" id="YC3-2N-InM"/>
-                                                <constraint firstItem="s9x-wg-UTg" firstAttribute="leading" secondItem="XA7-Gl-MRu" secondAttribute="trailing" constant="8" symbolic="YES" id="Zhm-St-E6U"/>
                                                 <constraint firstItem="0el-fG-DCh" firstAttribute="firstBaseline" secondItem="kFs-NW-HcF" secondAttribute="firstBaseline" id="ast-tr-qde"/>
                                                 <constraint firstItem="iLd-SC-WJ6" firstAttribute="firstBaseline" secondItem="eHs-tN-Pey" secondAttribute="firstBaseline" id="aul-Id-v0y"/>
                                                 <constraint firstItem="EHx-19-1D3" firstAttribute="width" secondItem="Ccb-oe-cYh" secondAttribute="width" id="bGy-Ub-hcx"/>
@@ -1988,13 +2051,10 @@
                                                 <constraint firstItem="fVi-EX-Aci" firstAttribute="top" secondItem="kFs-NW-HcF" secondAttribute="bottom" constant="8" symbolic="YES" id="fL0-hx-PHP"/>
                                                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="dOo-mR-WPE" secondAttribute="trailing" constant="20" symbolic="YES" id="g2W-1o-URO"/>
                                                 <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="g31-cS-g4Y" secondAttribute="trailing" constant="20" symbolic="YES" id="h4T-WX-YXR"/>
-                                                <constraint firstItem="XA7-Gl-MRu" firstAttribute="centerY" secondItem="gn8-wq-9v6" secondAttribute="centerY" id="jDa-JZ-jsK"/>
                                                 <constraint firstItem="uGz-Oo-fnE" firstAttribute="baseline" secondItem="jgu-cG-sBC" secondAttribute="firstBaseline" id="jW8-He-nvm"/>
                                                 <constraint firstItem="jgu-cG-sBC" firstAttribute="leading" secondItem="uGz-Oo-fnE" secondAttribute="trailing" constant="8" symbolic="YES" id="k1x-cb-FBH"/>
-                                                <constraint firstItem="XA7-Gl-MRu" firstAttribute="leading" secondItem="w9X-nc-ti0" secondAttribute="leading" id="kbJ-UO-p6U"/>
                                                 <constraint firstItem="eHs-tN-Pey" firstAttribute="width" secondItem="Ccb-oe-cYh" secondAttribute="width" id="kqf-zR-ao2"/>
-                                                <constraint firstItem="s9x-wg-UTg" firstAttribute="centerY" secondItem="XA7-Gl-MRu" secondAttribute="centerY" id="l88-VB-iPn"/>
-                                                <constraint firstItem="dOo-mR-WPE" firstAttribute="top" secondItem="fVi-EX-Aci" secondAttribute="bottom" constant="8" symbolic="YES" id="nC3-xL-rJE"/>
+                                                <constraint firstItem="dOo-mR-WPE" firstAttribute="top" secondItem="Clr-pu-002" secondAttribute="bottom" constant="8" symbolic="YES" id="nC3-xL-rJE"/>
                                                 <constraint firstItem="X7y-52-Juj" firstAttribute="width" secondItem="Ccb-oe-cYh" secondAttribute="width" id="pmM-fm-ySc"/>
                                                 <constraint firstItem="8An-Xf-Ur1" firstAttribute="leading" secondItem="CTX-6L-I3O" secondAttribute="trailing" constant="8" symbolic="YES" id="pu7-kx-UTi"/>
                                                 <constraint firstItem="EHx-19-1D3" firstAttribute="leading" secondItem="z2a-cF-5GG" secondAttribute="leading" constant="20" symbolic="YES" id="rcb-Eo-mpN"/>
@@ -2005,6 +2065,28 @@
                                                 <constraint firstItem="Ccb-oe-cYh" firstAttribute="leading" secondItem="z2a-cF-5GG" secondAttribute="leading" constant="20" symbolic="YES" id="xsE-lm-Yup"/>
                                                 <constraint firstItem="CTX-6L-I3O" firstAttribute="leading" secondItem="Ccb-oe-cYh" secondAttribute="trailing" constant="8" symbolic="YES" id="yHw-Ig-1EH"/>
                                                 <constraint firstItem="Vsx-tk-3Vv" firstAttribute="leading" secondItem="EHx-19-1D3" secondAttribute="trailing" constant="8" symbolic="YES" id="ybo-Z7-Ibc"/>
+                                                <constraint firstItem="Bft-lb-001" firstAttribute="leading" secondItem="z2a-cF-5GG" secondAttribute="leading" constant="20" symbolic="YES" id="Cfb-cn-001"/>
+                                                <constraint firstItem="Bft-lb-001" firstAttribute="width" secondItem="Ccb-oe-cYh" secondAttribute="width" id="Cfb-cn-002"/>
+                                                <constraint firstItem="Bft-lb-001" firstAttribute="firstBaseline" secondItem="Bft-bt-002" secondAttribute="firstBaseline" id="Cfb-cn-003"/>
+                                                <constraint firstItem="Bft-bt-002" firstAttribute="leading" secondItem="Bft-lb-001" secondAttribute="trailing" constant="8" symbolic="YES" id="Cfb-cn-004"/>
+                                                <constraint firstItem="Bft-bt-002" firstAttribute="top" secondItem="fVi-EX-Aci" secondAttribute="bottom" constant="8" symbolic="YES" id="Cfb-cn-005"/>
+                                                <constraint firstItem="Bft-rs-003" firstAttribute="leading" secondItem="Bft-bt-002" secondAttribute="trailing" constant="8" symbolic="YES" id="Cfb-cn-006"/>
+                                                <constraint firstItem="Bft-rs-003" firstAttribute="centerY" secondItem="Bft-bt-002" secondAttribute="centerY" id="Cfb-cn-007"/>
+                                                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Bft-rs-003" secondAttribute="trailing" constant="20" symbolic="YES" id="Cfb-cn-008"/>
+                                                <constraint firstItem="Sft-lb-004" firstAttribute="leading" secondItem="z2a-cF-5GG" secondAttribute="leading" constant="20" symbolic="YES" id="Cfb-cn-009"/>
+                                                <constraint firstItem="Sft-lb-004" firstAttribute="width" secondItem="Ccb-oe-cYh" secondAttribute="width" id="Cfb-cn-010"/>
+                                                <constraint firstItem="Sft-lb-004" firstAttribute="firstBaseline" secondItem="Sft-bt-005" secondAttribute="firstBaseline" id="Cfb-cn-011"/>
+                                                <constraint firstItem="Sft-bt-005" firstAttribute="leading" secondItem="Sft-lb-004" secondAttribute="trailing" constant="8" symbolic="YES" id="Cfb-cn-012"/>
+                                                <constraint firstItem="Sft-bt-005" firstAttribute="top" secondItem="Bft-bt-002" secondAttribute="bottom" constant="8" symbolic="YES" id="Cfb-cn-013"/>
+                                                <constraint firstItem="Sft-rs-006" firstAttribute="leading" secondItem="Sft-bt-005" secondAttribute="trailing" constant="8" symbolic="YES" id="Cfb-cn-014"/>
+                                                <constraint firstItem="Sft-rs-006" firstAttribute="centerY" secondItem="Sft-bt-005" secondAttribute="centerY" id="Cfb-cn-015"/>
+                                                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Sft-rs-006" secondAttribute="trailing" constant="20" symbolic="YES" id="Cfb-cn-016"/>
+                                                <constraint firstItem="Clr-lb-001" firstAttribute="leading" secondItem="z2a-cF-5GG" secondAttribute="leading" constant="20" symbolic="YES" id="Clc-cn-001"/>
+                                                <constraint firstItem="Clr-lb-001" firstAttribute="width" secondItem="Ccb-oe-cYh" secondAttribute="width" id="Clc-cn-002"/>
+                                                <constraint firstItem="Clr-lb-001" firstAttribute="firstBaseline" secondItem="Clr-pu-002" secondAttribute="firstBaseline" id="Clc-cn-003"/>
+                                                <constraint firstItem="Clr-pu-002" firstAttribute="leading" secondItem="Clr-lb-001" secondAttribute="trailing" constant="8" symbolic="YES" id="Clc-cn-004"/>
+                                                <constraint firstItem="Clr-pu-002" firstAttribute="top" secondItem="Sft-bt-005" secondAttribute="bottom" constant="8" symbolic="YES" id="Clc-cn-005"/>
+                                                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Clr-pu-002" secondAttribute="trailing" constant="20" symbolic="YES" id="Clc-cn-006"/>
                                             </constraints>
                                         </view>
                                     </tabViewItem>
@@ -2155,6 +2237,9 @@
                         <outlet property="appearanceButton" destination="1nt-58-sRk" id="yd7-o8-TSs"/>
                         <outlet property="appearancePopup" destination="kFs-NW-HcF" id="xXg-sc-Qm9"/>
                         <outlet property="emojiPopupButton" destination="ZqY-el-ju1" id="tpU-GX-yxZ"/>
+                        <outlet property="baseFontButton" destination="Bft-bt-002" id="Cfc-ou-001"/>
+                        <outlet property="colorSchemePopup" destination="Clr-pu-002" id="Clc-ou-001"/>
+                        <outlet property="syntaxFontButton" destination="Sft-bt-005" id="Cfc-ou-002"/>
                         <outlet property="fontSizeField" destination="fVi-EX-Aci" id="v7P-Ci-Mul"/>
                         <outlet property="fontSizeStepper" destination="2t7-PJ-hZL" id="Mrg-9N-cVz"/>
                         <outlet property="highlightPopupButton" destination="Zgz-0L-wl8" id="738-G6-oIL"/>
@@ -2271,30 +2356,17 @@
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>
                             </textField>
-                            <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="vtU-YO-TAi">
-                                <rect key="frame" x="20" y="215" width="371" height="24"/>
-                                <buttonCell key="cell" type="push" title="If you like this application and find it useful, buy me a ☕️!" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="esx-ic-ADn">
-                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                    <font key="font" metaFont="system"/>
-                                </buttonCell>
-                                <connections>
-                                    <action selector="buyMeACoffee:" target="bdx-fe-T4t" id="rIH-Dc-sK8"/>
-                                </connections>
-                            </button>
                         </subviews>
                         <constraints>
-                            <constraint firstItem="vtU-YO-TAi" firstAttribute="leading" secondItem="tGB-AZ-NgW" secondAttribute="leading" constant="20" symbolic="YES" id="28N-0L-tGY"/>
                             <constraint firstItem="XK0-jd-qqx" firstAttribute="centerX" secondItem="Bfq-db-PX4" secondAttribute="centerX" id="2Xh-IJ-3lc"/>
                             <constraint firstItem="J1e-rg-hJz" firstAttribute="top" secondItem="XK0-jd-qqx" secondAttribute="bottom" constant="8" symbolic="YES" id="6Tn-Gs-4S4"/>
                             <constraint firstItem="Bfq-db-PX4" firstAttribute="top" secondItem="tGB-AZ-NgW" secondAttribute="top" id="GgX-aM-aX9"/>
                             <constraint firstAttribute="trailing" secondItem="3wW-8y-niQ" secondAttribute="trailing" id="LoX-UO-q7x"/>
                             <constraint firstAttribute="bottom" secondItem="3wW-8y-niQ" secondAttribute="bottom" id="VUf-5p-pz6"/>
-                            <constraint firstAttribute="trailing" secondItem="vtU-YO-TAi" secondAttribute="trailing" constant="20" symbolic="YES" id="byS-D9-kv7"/>
                             <constraint firstItem="Bfq-db-PX4" firstAttribute="centerX" secondItem="tGB-AZ-NgW" secondAttribute="centerX" id="ejV-kb-iJ8"/>
-                            <constraint firstItem="fPO-E1-Kd7" firstAttribute="top" secondItem="vtU-YO-TAi" secondAttribute="bottom" constant="20" symbolic="YES" id="eq2-eY-R7v"/>
+                            <constraint firstItem="fPO-E1-Kd7" firstAttribute="top" secondItem="gHa-vC-czD" secondAttribute="bottom" constant="20" symbolic="YES" id="eq2-eY-R7v"/>
                             <constraint firstItem="XK0-jd-qqx" firstAttribute="top" secondItem="Bfq-db-PX4" secondAttribute="bottom" constant="8" symbolic="YES" id="gfg-7G-fEI"/>
                             <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="XK0-jd-qqx" secondAttribute="trailing" constant="20" symbolic="YES" id="ipT-ki-NHB"/>
-                            <constraint firstItem="vtU-YO-TAi" firstAttribute="top" secondItem="gHa-vC-czD" secondAttribute="bottom" constant="20" symbolic="YES" id="q61-4f-V6p"/>
                             <constraint firstItem="XK0-jd-qqx" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="tGB-AZ-NgW" secondAttribute="leading" constant="20" symbolic="YES" id="qOu-t3-kAt"/>
                             <constraint firstItem="gHa-vC-czD" firstAttribute="top" secondItem="J1e-rg-hJz" secondAttribute="bottom" constant="8" symbolic="YES" id="sPr-rY-3tk"/>
                             <constraint firstItem="3wW-8y-niQ" firstAttribute="leading" secondItem="tGB-AZ-NgW" secondAttribute="leading" id="suV-qO-CaL"/>
