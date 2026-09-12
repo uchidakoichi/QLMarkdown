@@ -161,7 +161,7 @@ Group containers identifiers should be prefixed by requestor's team ID
 
 1. [Releases ページ](https://github.com/uchidakoichi/QLMarkdown/releases/latest) を開きます
 2. **Assets** から `QLMarkdown-X.Y.Z-fork.N.zip` をダウンロードします
-   - 現在の最新は [`QLMarkdown-1.5.2-fork.1.zip`](https://github.com/uchidakoichi/QLMarkdown/releases/download/v1.5.2-fork.1/QLMarkdown-1.5.2-fork.1.zip)（約 24 MB）です
+   - 現在の最新は [`QLMarkdown-1.5.2-fork.2.zip`](https://github.com/uchidakoichi/QLMarkdown/releases/download/v1.5.2-fork.2/QLMarkdown-1.5.2-fork.2.zip)（約 24 MB）です
 3. zip をダブルクリックして展開し、出てきた **QLMarkdown.app** を `/Applications`（アプリケーションフォルダ）にドラッグします
 
 ### A-2: 隔離属性を外す（ここが重要）
