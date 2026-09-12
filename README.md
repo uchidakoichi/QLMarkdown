@@ -47,7 +47,31 @@
 
 コードブロックは対象外で、既存のシンタックスハイライトがそのまま効きます。
 
-### 3. Quick Look から開くファイル以外の情報を排除
+### 3. `<img>` タグの画像を表示する
+
+Markdown の `![](...)` 記法だけでなく、HTML の `<img src="...">` で指定した画像も表示されます。`width` などの属性がそのまま効くので、Markdown 記法では指定できない表示サイズを指定できます。
+
+```markdown
+<img src="images/screenshot.png" width="400"/>
+```
+
+Quick Look のプレビューはベース URL を持たない HTML 文字列としてレンダリングされるため、`src` が相対パスのままでは Web ビューが解決できません。そこでローカルファイルを指す `src` は `data:` URI に埋め込みます（「Inline local images」が有効なとき）。対応する形式:
+
+| `src` の書き方 | 例 |
+|---|---|
+| 相対パス（`./` 付きも可） | `img/a.png`、`./a.png`、`sub/dir/a.png` |
+| パーセントエンコード | `my%20image.png` |
+| 絶対パス | `/Users/me/Pictures/a.png` |
+| `file://` URL | `file:///Users/me/Pictures/a.png` |
+
+`http(s)://` と `data:` の `src` はそのまま Web ビューに任せます。段落中のインライン記述、シングルクォート、属性の順序、大文字の `<IMG>` にも対応します。
+
+> [!IMPORTANT]
+> `<img>` が描画されるには **Raw HTML（Inline HTML (unsafe)）が有効** である必要があります。cmark は raw HTML を無効にすると HTML ノードをすべて `<!-- raw HTML omitted -->` に置き換えるため、`<img>` だけを通すことはできません。このフォークでは既定で有効にしています。
+>
+> Raw HTML を有効にすると、`<script>` `<iframe>` `<style>` などの危険なタグは Tag filter 拡張がエスケープしますが、**`onerror=` のようなインラインのイベントハンドラは通ります**。信頼できない Markdown ファイルをプレビューする可能性がある場合は、設定画面で「Inline HTML (unsafe)」をオフにしてください（その場合 `<img>` も表示されなくなります）。
+
+### 4. Quick Look から開くファイル以外の情報を排除
 
 - レンダリング結果末尾のフッター（アプリ名・バージョン・著作権表示・寄付リンク）を削除
 - 出力 HTML に埋め込まれていた `<!-- File generated with QLMarkdown ... -->` コメントを削除
@@ -55,7 +79,7 @@
 - 設定画面ツールバーの寄付ボタン、アプリメニューの項目、About ウィンドウのボタン、CLI が表示していた同様のメッセージを削除
 - 上記に伴い不要になった「Show about info」スイッチと `about` 設定も削除
 
-### 4. App Group を使わない
+### 5. App Group を使わない
 
 本家は設定と補助ファイルを App Group コンテナ（`~/Library/Group Containers/group.org.sbarex.qlmarkdown`）に置いています。しかし macOS ではこの領域が TCC 保護対象で、**署名に Team ID が無いビルドはアクセスを拒否され、起動のたびに「ほかのアプリからのデータへのアクセス権を求めています」というダイアログが出ます**（許可しても永続化されません）。
 
@@ -74,7 +98,7 @@ Group containers identifiers should be prefixed by requestor's team ID
 
 アプリ（非サンドボックス）が `UserDefaults` 経由で書き、サンドボックス下の拡張機能は自分のコンテナへリダイレクトされないよう**このファイルを直接読みます**。パスは `getpwuid` で実ホームを解決するため、サンドボックスの有無に関わらず同じ場所を指します。両方の `.entitlements` から `com.apple.security.application-groups` を削除しています。
 
-### 5. 既定値の変更
+### 6. 既定値の変更
 
 配布時の初期値を変更しています（設定ファイルが無いときに使われる値）。
 
@@ -87,7 +111,7 @@ Group containers identifiers should be prefixed by requestor's team ID
 | Colors | Default | Terminal |
 | Footnotes | on | off |
 | Hard break | off | on |
-| Raw HTML (unsafe) | on | off |
+| Raw HTML (unsafe) | on | on（`<img>` の描画に必要） |
 | Strikethrough | single tilde | 無効 |
 | Highlight (`==`) | off | on |
 | GitHub mention | off | on |
@@ -96,15 +120,16 @@ Group containers identifiers should be prefixed by requestor's team ID
 
 既定フォントの [PlemolJP Console NF](https://github.com/yuru7/PlemolJP) が入っていない環境では、CSS のフォールバック（本文は `-apple-system`、コードは `ui-monospace` / Menlo）で表示されます。
 
-### 6. 不具合修正
+### 7. 不具合修正
 
 - **フォントパネルでウェイトを選んでも反映されない** — 選択された face からファミリ名しか取り出しておらず、`font-weight` / `font-style` を出力していませんでした
 - **フォントパネルの候補がすべてグレーアウトして選べない** — パネルを開く前に `NSViewController` へ `makeFirstResponder` していたため、`acceptsFirstResponder` が `false` の同コントローラは受け取れず、ファーストレスポンダがウィンドウに戻ってレスポンダチェーンから外れ、`NSFontPanel` が `changeFont(_:)` の処理先を見つけられずパネル全体を無効化していました。あわせて `AppDelegate` を `NSFontChanging` に準拠させ、フォーカス位置に依存しないようにしています
 - **フォントパネルが画面の隅に開く** — 初回表示時に設定ウィンドウの中央へ配置するようにしました
 - **Preferred Quick Look size が復元されない** — `update(from:)` が未保存のキーに対して値を `nil` で上書きしていたため、保存した固定サイズも既定値も反映されませんでした
+- **スキップ対象言語のコードブロックがエスケープされない** — シンタックスハイライト拡張は `mermaid` / `math` / `markdown` を処理対象外にしていますが、その分岐でコード本文を無escapeで出力していたため、```markdown フェンスに書いた `<img>` や `<b>` が**実際のタグとして解釈されていました**。cmark 本体と同じく `houdini_escape_html0` でエスケープするよう修正しています（mermaid と math はクライアント側ライブラリが要素のテキストを読むため、ブラウザがエンティティを復元して従来どおり動作します）
 - 設定のリロード時にフォント関連の設定が UI へ反映されていなかった点を修正
 
-### 7. CLI のオプション追加
+### 8. CLI のオプション追加
 
 ```
 --base-font-family <font name>   本文のフォントファミリ

@@ -487,7 +487,12 @@ class Settings: Codable {
     var footnotesOption: Bool = false
     var hardBreakOption: Bool = true
     var noSoftBreakOption: Bool = false
-    var unsafeHTMLOption: Bool = false
+    /// Let the raw HTML of the Markdown source through.
+    ///
+    /// Required for `<img>` tags to be rendered at all: cmark replaces every raw HTML node with
+    /// `<!-- raw HTML omitted -->` when it is disabled. The `tagFilterExtension` still strips the
+    /// dangerous tags (`script`, `iframe`, `style`, …).
+    var unsafeHTMLOption: Bool = true
     var smartQuotesOption: Bool = true
     var validateUTFOption: Bool = false
     

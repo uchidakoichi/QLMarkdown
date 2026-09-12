@@ -297,19 +297,8 @@ extension Settings {
                             for img in try doc.select("img") {
                                 let src = try img.attr("src")
                                 
-                                guard !src.isEmpty, !src.hasPrefix("http"), !src.lowercased().hasPrefix("http") else {
-                                    // Do not handle external image.
+                                guard let file = Settings.localImagePath(for: src, relativeTo: baseDir) else {
                                     continue
-                                }
-                                guard !src.hasPrefix("data:") else {
-                                    // Do not reprocess data: image.
-                                    continue
-                                }
-                                
-                                let file = baseDir.appendingPathComponent(src).path
-                                guard FileManager.default.fileExists(atPath: file) else {
-                                    os_log("Image %{public}@ not found!", log: OSLog.rendering, type: .error)
-                                    continue // File not found.
                                 }
                                 
                                 let ext = URL(fileURLWithPath: file).pathExtension
@@ -800,6 +789,51 @@ table.debug td {
      *  - header: Header block.
      *  - footer: Code to put at the end of the body.
      */
+
+    /// Resolves the `src` of an `<img>` tag found inside a raw HTML fragment to a local file that
+    /// can be embedded as a `data:` URI, or `nil` when it must be left untouched.
+    ///
+    /// The Quick Look preview is rendered from an HTML string with no base URL, so a `src` that
+    /// stays relative (or a plain absolute path) cannot be resolved by the web view: every local
+    /// reference has to be inlined here. Handled forms:
+    ///
+    /// - relative paths, resolved against the folder of the Markdown file, with or without `./`
+    /// - percent encoded paths (`my%20image.png`), as written by most Markdown editors
+    /// - absolute paths (`/Users/…/image.png`)
+    /// - `file://` URLs
+    ///
+    /// `http(s)://` and `data:` sources are left to the web view.
+    static func localImagePath(for src: String, relativeTo baseDir: URL) -> String? {
+        let trimmed = src.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return nil
+        }
+        
+        let lowercased = trimmed.lowercased()
+        guard !lowercased.hasPrefix("http:"), !lowercased.hasPrefix("https:"), !lowercased.hasPrefix("data:") else {
+            // Handled by the web view.
+            return nil
+        }
+        
+        let path: String
+        if lowercased.hasPrefix("file:") {
+            guard let url = URL(string: trimmed), url.isFileURL else {
+                return nil
+            }
+            path = url.path
+        } else {
+            // A `src` is a URL: undo the percent encoding before touching the file system, but keep
+            // the literal form when it is not valid encoding (a name containing a bare `%`).
+            let decoded = trimmed.removingPercentEncoding ?? trimmed
+            path = decoded.hasPrefix("/") ? decoded : baseDir.appendingPathComponent(decoded).path
+        }
+        
+        guard FileManager.default.fileExists(atPath: path) else {
+            os_log("Image %{public}@ not found!", log: OSLog.rendering, type: .error, path)
+            return nil
+        }
+        return path
+    }
 
     /// CSS that colorizes the Markdown elements according to `colorScheme`.
     ///

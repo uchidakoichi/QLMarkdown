@@ -382,12 +382,17 @@ static void html_render(cmark_syntax_extension *extension,
     bool skip = is_language_skipped((const char **)settings->skipped_languages, settings->skipped_languages_size, language);
     if (!skip) {
         formatted = highlight_format_string2((const char *)node->as.code.literal.data, (const char *)language, &exit_code, true);
+        if (exit_code == EXIT_SUCCESS && formatted != NULL) {
+            cmark_strbuf_puts(renderer->html, formatted);
+        }
     } else {
-        formatted = (char *)node->as.code.literal.data;
-    }
-    
-    if (exit_code == EXIT_SUCCESS && formatted != NULL) {
-        cmark_strbuf_puts(renderer->html, formatted);
+        formatted = NULL;
+        // The literal of a skipped language is emitted as is, so it has to be escaped exactly like
+        // cmark does for a plain code block: without this the content of a ```markdown fence (or of
+        // any other skipped language) would be parsed as markup instead of being shown as text.
+        // The languages rendered by a client side library (mermaid, math) read the text content of
+        // the element, so the browser gives them back the unescaped characters.
+        houdini_escape_html0(renderer->html, node->as.code.literal.data, node->as.code.literal.len, 0);
     }
     // cmark_strbuf_put(renderer->html, node->as.code.literal.data, node->as.code.literal.len);
     
